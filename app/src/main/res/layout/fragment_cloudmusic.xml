@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:text="自动化工具"
+        android:textSize="24sp" />
+
+    <Button
+        android:id="@+id/cloudmusic_start_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="网易云启动自动化脚本" />
+
+    <Button
+        android:id="@+id/cloudmusic_stop_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="网易云停止自动化脚本" />
+
+
+</LinearLayout>

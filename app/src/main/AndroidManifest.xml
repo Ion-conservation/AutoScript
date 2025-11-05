@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.BROADCAST_STICKY" />
+
+
+    <queries>
+        <package android:name="com.netease.cloudmusic" />
+        <package android:name="com.taobao.taobao" />
+        <package android:name="auto.script" />
+    </queries>
+
+    <application
+        android:name=".MyApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NetEaseAutomation"
+        tools:targetApi="31">
+
+
+        <!-- ... 主入口 ... -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 注册无障碍服务 -->
+        <service
+            android:name=".CloudMusicService"
+            android:exported="true"
+            android:label="@string/cloudmusic_service"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:description="@string/cloudmusic_description">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/cloudmusic_config" />
+        </service>
+
+        <service
+            android:name=".TaobaoService"
+            android:exported="true"
+            android:label="@string/taobao_service"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:description="@string/taobao_description">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/taobao_config" />
+        </service>
+
+        <receiver
+            android:name=".ScriptReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="auto.script" />
+            </intent-filter>
+        </receiver>
+
+
+    </application>
+
+</manifest>

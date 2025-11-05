@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">自动化脚本</string>
+
+    <string name="accessibility_service_description">此服务用于自动化操作网易云音乐，例如自动点击，辅助测试等。</string>
+    <string name="accessibility_service_label">网易云自动化服务</string>
+
+    <string name="cloudmusic_service">网易云无障碍服务</string>
+    <string name="cloudmusic_description">网易云音乐自动化脚本</string>
+
+    <string name="taobao_service">淘宝无障碍服务</string>
+    <string name="taobao_description">淘宝自动化脚本</string>
+
+
+</resources>

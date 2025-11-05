@@ -1,0 +1,287 @@
+adb shell dumpsys activity | findstr mFocus
+
+adb shell uiautomator dump /sdcard/xxx.xml
+
+adb shell uiautomator dump /sdcard/音乐.xml
+
+打开了软件商店
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{62300b1 u0 com.heytap.market/com.downloader.page.ui.main.activity.LargerHalfScreenDownloaderPageActivity t289}
+    mFocusedWindow=Window{734c852 u0 com.heytap.market/com.downloader.page.ui.main.activity.LargerHalfScreenDownloaderPageActivity}
+
+应用内广告
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{3eeca3a u0 com.netease.cloudmusic/.activity.MainProcessAdEmbedBrowserActivity t273}
+    mFocusedWindow=Window{b7ddf3f u0 com.netease.cloudmusic/com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity}
+
+看完广告时的关闭页面
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{c039fb5 u0 com.netease.cloudmusic/.module.ad.motivation.commonui.AdMotivationVideoActivity t273}
+    mFocusedWindow=Window{ce166bd u0 com.netease.cloudmusic/com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity}
+
+
+start
+
+打开网易云音乐后的主页
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{20fb4f7 u0 com.netease.cloudmusic/.activity.IconChangeDefaultAlias t13008}
+    mFocusedWindow=Window{daf06d u0 com.netease.cloudmusic/com.netease.cloudmusic.activity.IconChangeDefaultAlias}
+
+点击免费听按钮
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{20fb4f7 u0 com.netease.cloudmusic/.activity.IconChangeDefaultAlias t13008}
+    mFocusedWindow=Window{daf06d u0 com.netease.cloudmusic/com.netease.cloudmusic.activity.IconChangeDefaultAlias}
+
+点击 看视频，点亮拼图
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{25fe28a u0 com.netease.cloudmusic/.module.ad.motivation.commonui.AdMotivationVideoActivity t13008}
+    mFocusedWindow=Window{c4614aa u0 com.netease.cloudmusic/com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity}
+
+点击 广告，弹出 取消 打开按钮
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{b2ca791 u0 com.oplus.securitypermission/com.oplusos.securitypermission.permission.ui.AppStartConfirmDialogActivity t13008}
+    mFocusedWindow=Window{ce3a23d u0 com.oplus.securitypermission/com.oplusos.securitypermission.permission.ui.AppStartConfirmDialogActivity}
+
+点击取消，进入到内部浏览器
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{7f0748d u0 com.netease.cloudmusic/.activity.MainProcessAdEmbedBrowserActivity t13008}
+    mFocusedWindow=Window{ed06e13 u0 com.netease.cloudmusic/com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity}
+
+看完广告，在关闭广告的页面
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{25fe28a u0 com.netease.cloudmusic/.module.ad.motivation.commonui.AdMotivationVideoActivity t13008}
+    mFocusedWindow=Window{2a41c72 u0 com.netease.cloudmusic/com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity}
+
+点击关闭，回到免费听页面
+PS D:\Learn\learn-kotlin> adb shell dumpsys activity | findstr mFocus
+  mFocusedApp=ActivityRecord{20fb4f7 u0 com.netease.cloudmusic/.activity.IconChangeDefaultAlias t13008}
+    mFocusedWindow=Window{daf06d u0 com.netease.cloudmusic/com.netease.cloudmusic.activity.IconChangeDefaultAlias}
+
+
+
+
+
+
+
+TYPE_WINDOW_STATE_CHANGED
+启动
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.activity.MainActivity
+
+点击 ‘看视频，点亮拼图’ 按钮
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+
+
+这里应该是进入了内部的浏览器播放广告 ？
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.activity.RedirectActivity
+
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.afollestad.materialdialogs.k
+
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+
+32 , APP 发生变化，当前 APP 为 com.netease.cloudmusic, 当前页面 com.afollestad.materialdialogs.d
+
+
+
+整理一下 整体流程 和 TYPE_WINDOW_STATE_CHANGED 状态变化，结合状态机，补全整个流程的状态
+
+State + TYPE_WINDOW_STATE_CHANGED 双驱动
+
+初始化状态
+activity: ''
+State: IDLE
+
+1. 启动 网易云音乐 APP
+activity: ''
+State: LAUNCHING_APP
+工作：无
+下一步驱动：TYPE_WINDOW_STATE_CHANGED
+
+2. 点击 跳过 按钮
+TYPE_WINDOW_STATE_CHANGED：activity：com.netease.cloudmusic.activity.MainActivity
+触发处理流程：找到 APP 启动广告的跳过按钮并点击，进入主页面，
+下一步驱动 State
+
+3. 点击 免费听 按钮
+不触发 TYPE_WINDOW_STATE_CHANGED，如何继续驱动程序执行？
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_FIND_SCROLL_CONTAINER
+
+4. 滚动容器
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_CLICK_PUZZLE_BUTTON
+
+4. 点击 看视频，点亮拼图 按钮
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_CLICK_AD
+
+5. 点击 广告
+activity：.module.ad.motivation.commonui.AdMotivationVideoActivity
+State: WAIT_TO_CLICK_CANCLE_BUTTON
+
+6. 弹出 ‘取消’ ‘打开’ 按钮，点击 取消 按钮（realme 无此步骤）
+activity：com.netease.cloudmusic.activity.RedirectActivity
+State: WAIT_TO_AD_PLAY
+
+7. 进入内部浏览器播放广告，等待广告播放 15 秒
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_RETURN_APP
+
+8. 多次触发 返回 操作，直到回到 广告对应的 activity
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_CLICK_CLOSE_BUTTON
+
+9. 点击广告关闭按钮，返回 免费听 页面，准备再次点击 拼图
+activity：.activity.IconChangeDefaultAlias
+State: WAIT_TO_CLICK_PUZZLE_BUTTON
+
+10. 重复 4 - 9 步骤
+
+
+总结：单纯靠 onAccessibilityEvent 的 TYPE_WINDOW_STATE_CHANGED 驱动程序是不够的，因为状态变化不够详细，不能提供点击事件之后的状态变化，即便加上 TYPE_WINDOW_CONTENT_CHANGED。
+单纯靠状态机呢？也是不够，单纯状态机无法判断 APP 状态，所以 状态机 + TYPE_WINDOW_STATE_CHANGED，同时根据两个状态去驱动程序最正确，特别是广告返回之后，有没有到达指定 activity 的判断。
+
+推荐页面
+androidx.viewpager.widget.ViewPager：com.netease.cloudmusic:id/arkViewPager
+    - android.view.ViewGroup：com.netease.cloudmusic:id/spinnerSwipeLayout
+        - android.widget.FrameLayout：com.netease.cloudmusic:id/adStickContainer
+            - android.widget.FrameLayout：com.netease.cloudmusic:id/recommend_mix_container_root
+                - android.widget.LinearLayout：com.netease.cloudmusic:id/mixContainerRefreshLayout
+                    - androidx.recyclerview.widget.RecyclerView：com.netease.cloudmusic:id/mixContainerRecyclerView
+
+免费听页面
+androidx.viewpager.widget.ViewPager：com.netease.cloudmusic:id/arkViewPager
+    - android.widget.FrameLayout：com.netease.cloudmusic:id/rn_root_view
+        - android.widget.FrameLayout：com.netease.cloudmusic:id/rn_content
+
+音乐页面
+androidx.viewpager.widget.ViewPager：com.netease.cloudmusic:id/arkViewPager
+    - android.widget.FrameLayout：com.netease.cloudmusic:id/feature_container_root
+        - android.widget.LinearLayout：com.netease.cloudmusic:id/mixContainerRefreshLayout
+            - androidx.recyclerview.widget.RecyclerView：com.netease.cloudmusic:id/mixContainerRecyclerView
+
+
+com.netease.cloudmusic:id/mainActivityContainer
+
+
+点击跳转APP停留10秒
+点击广告 CLICK_AD_TO_DETAIL 进入广告详情
+2025-11-04 01:34:23.988 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.RedirectActivity
+处理取消按钮 State.CLICK_OPEN_BUTTON
+正在播放广告 State.WAITING_AD_FINISH
+10 秒后 State.RETURNING_TO_APP
+2025-11-04 01:34:24.101 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+点击后进入内置浏览器
+2025-11-04 01:34:39.365 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+可能会发生：返回后可能会再次加载广告
+2025-11-04 01:42:29.514 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.LoadingAdActivity
+可能会发生：广告结束后，在一个空白的内置浏览器页面
+2025-11-04 01:42:34.991 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+点击返回按钮，回到广告页
+2025-11-04 01:34:55.569 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+弹出关闭弹窗，需要点击关闭按钮
+2025-11-04 01:34:55.917 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.afollestad.materialdialogs.d
+回到主程序
+2025-11-04 01:35:00.983 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainActivity
+
+// 点击跳转APP停留10秒
+// 正在播放广告，10 秒后变成 RETURNING_TO_APP
+if(currentState == State.WAITING_AD_FINISH && event.className.toString() == "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity"){
+    handler.postDelayed({
+        driveByOuterState(State.RETURNING_TO_APP)
+    },  10000)
+}
+// RETURNING_TO_APP 状态下，当 className 不等于 AdMotivationVideoActivity 时，一直返回。 难点：如何一直重复执行，直到回到广告页。
+if(currentState == State.RETURNING_TO_APP && event.className.toString() != "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity") {
+    val toolBarResourceId = "com.netease.cloudmusic:id/toolbar"
+    rootInActiveWindow.findViewByResourceId(toolBarResourceId).firstOrNull()?.let {
+        it.performClick(AccessibilityNodeInfo.ACTION_CLICK)
+    }?: {
+        performGlobalAction(GLOBAL_ACTION_BACK);
+    }
+}
+// RETURNING_TO_APP 状态下，当 className 等于 com.afollestad.materialdialogs.d 时，点击关闭按钮
+if(currentState == State.RETURNING_TO_APP && event.className.toString() == "com.afollestad.materialdialogs.d"){
+    driveByInnerState(State.CLOSING_REWARD_DIALOG)
+}
+// RETURNING_TO_APP 出现启动广告，找到跳过按钮进行跳过
+if(currentState == State.RETURNING_TO_APP && event.className.toString() == "com.netease.cloudmusic.activity.LoadingAdActivity") {
+            ScriptUtils.executeWithTimeoutRetry(
+                handler = handler,
+                description = "查找 APP 启动广告的 ‘跳过’ 按钮并点击。",
+                findAction = {
+                    rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.netease.cloudmusic:id/skipBtn")
+                        .firstOrNull()
+                },
+                onSuccess = { button ->
+                    Log.i(TAG, "找到 App 启动广告 '跳过' 按钮，尝试点击。")
+                    button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    driveByInnerState(State.WAIT_TO_CHECK_NODE)
+                },
+                onFailure = {
+                    Log.i(TAG, "找不到 App 启动广告 '跳过' 按钮，尝试点击 ‘免费听’ 文本。")
+                    driveByInnerState(State.WAIT_TO_CHECK_NODE)
+                }
+            )
+}
+
+// 看15秒后点击
+State.WAITING_AD_FINISH
+15 秒后变成 CLICK_AD_TO_DETAIL 点击广告
+2025-11-04 01:34:24.101 26496-26496                            D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+点击广告后
+
+
+
+
+// 点击跳转APP停留10秒 这个可以点击头部返回按钮一次返回
+2025-11-04 02:06:24.836 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:06:24.836 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.RedirectActivity
+2025-11-04 02:06:24.952 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:06:24.952 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+2025-11-04 02:06:36.890 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:06:36.890 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:06:43.271 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:06:43.271 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+2025-11-04 02:06:52.456 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:06:52.456 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:07:08.475 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:08.475 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+2025-11-04 02:07:09.116 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:09.116 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.afollestad.materialdialogs.d
+2025-11-04 02:07:18.509 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:18.509 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:07:22.540 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:22.540 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.afollestad.materialdialogs.d
+2025-11-04 02:07:23.843 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:23.843 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainActivity
+2025-11-04 02:07:23.943 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:23.944 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainActivity
+
+
+// 看15秒后点击 这个没有返回按钮，会跳转到其他 app，尝试使用 全局返回
+2025-11-04 02:07:26.299 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:26.299 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity
+2025-11-04 02:07:46.183 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:07:46.183 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:08:21.056 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:08:21.056 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:08:21.349 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:08:21.349 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.LoadingAdActivity
+2025-11-04 02:08:26.402 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:08:26.402 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainProcessAdEmbedBrowserActivity
+2025-11-04 02:08:31.737 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:08:31.737 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.afollestad.materialdialogs.d
+2025-11-04 02:08:35.744 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED packageName: com.netease.cloudmusic
+2025-11-04 02:08:35.744 26496-26496 网易云音乐脚本                 auto.script                          D  TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.activity.MainActivity
+
+
+
