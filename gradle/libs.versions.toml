@@ -14,6 +14,8 @@ androidxTest = "1.5.0"
 androidxUiAutomator = "2.3.0"
 material = "1.12.0"
 material3 = "1.4.0"
+coroutines = "1.7.3"
+shizuku = "13.1.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,6 +42,17 @@ androidx-test-core = { group = "androidx.test", name = "core", version.ref = "an
 # 4. UI Automator
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "androidxUiAutomator" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+
+
+
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version = "1.6.1" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment", version = "1.6.2" }
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

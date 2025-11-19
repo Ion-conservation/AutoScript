@@ -3,15 +3,44 @@ package auto.script.utils
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Handler
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
+import java.io.File
 
 object ScriptUtils {
 
-    val TAG = "ScriptUtils"
+    const val TAG = "ScriptUtils"
+
+    fun saveXmlToLocal(
+        context: Context,
+        xmlContent: String,
+        fileName: String = "data.xml"
+    ) {
+        val file = File(context.filesDir, fileName)
+        file.writeText(xmlContent, Charsets.UTF_8)
+    }
+
+    fun getCenterFromBounds(
+        topLeft: Pair<Int, Int>,
+        bottomRight: Pair<Int, Int>
+    ): Pair<Int, Int> {
+        val (x1, y1) = topLeft
+        val (x2, y2) = bottomRight
+        val centerX = (x1 + x2) / 2
+        val centerY = (y1 + y2) / 2
+        return Pair(centerX, centerY)
+    }
+
+    fun getCenterFromNodeInfo(node: AccessibilityNodeInfo): Pair<Int, Int>? {
+        val rect = Rect()
+        node.getBoundsInScreen(rect)
+        if (rect.isEmpty) return null
+        return Pair(rect.centerX(), rect.centerY())
+    }
+
 
     /**
      * 检查辅助功能服务是否启用
@@ -95,11 +124,7 @@ object ScriptUtils {
         }
         handler.post(retryRunnable)
     }
-
-    fun logAndToast(context: Context, TAG: String, message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        Log.i(TAG, message)
-    }
+    
 }
 
 

@@ -1,11 +1,13 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/nav_cloudmusic"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="Cloudmusic" />
-    <item
         android:id="@+id/nav_taobao"
         android:icon="@android:drawable/ic_menu_view"
         android:title="Taobao" />
+
+    <item
+        android:id="@+id/nav_cloudmusic"
+        android:icon="@android:drawable/ic_menu_manage"
+        android:title="Cloudmusic" />
+
 
 </menu>

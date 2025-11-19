@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.BROADCAST_STICKY" />
-
+    <!-- 1. 声明 Shizuku 需要的权限 -->
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
     <queries>
         <package android:name="com.netease.cloudmusic" />
@@ -21,13 +21,12 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NetEaseAutomation"
-        tools:targetApi="31">
+        android:theme="@style/Theme.NetEaseAutomation">
 
 
         <!-- ... 主入口 ... -->
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -37,42 +36,33 @@
 
         <!-- 注册无障碍服务 -->
         <service
-            android:name=".CloudMusicService"
-            android:exported="true"
-            android:label="@string/cloudmusic_service"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:description="@string/cloudmusic_description">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
+            android:name=".service.AutomationBridgeService"
+            android:enabled="true"
+            android:exported="false" />
 
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/cloudmusic_config" />
-        </service>
 
         <service
-            android:name=".TaobaoService"
-            android:exported="true"
-            android:label="@string/taobao_service"
+            android:name=".service.AutomationService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:description="@string/taobao_description">
+            android:canPerformGestures="true"
+            android:label="@string/app_a11y_service_name"
+            android:enabled="true"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
-
             <meta-data
                 android:name="android.accessibilityservice"
-                android:resource="@xml/taobao_config" />
+                android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <receiver
-            android:name=".ScriptReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="auto.script" />
-            </intent-filter>
-        </receiver>
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
 
     </application>

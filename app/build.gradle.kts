@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "auto.script"
-        minSdk = 29
+        minSdk = 33
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -41,6 +41,8 @@ android {
     }
     buildFeatures {
         compose = true
+        aidl = true
+        buildConfig = true
     }
 }
 
@@ -69,9 +71,14 @@ dependencies {
     // 必须在 androidTestImplementation scope 下
     androidTestImplementation(libs.androidx.uiautomator)
     implementation(libs.google.material)
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.12.0")
-    implementation("androidx.fragment:fragment-ktx:1.6.2")
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.fragment)
+
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
+
 
 }
 

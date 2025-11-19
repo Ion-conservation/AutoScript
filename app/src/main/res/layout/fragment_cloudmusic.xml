@@ -10,20 +10,38 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="32dp"
-        android:text="自动化工具"
+        android:text="网易云音乐自动化工具"
         android:textSize="24sp" />
+
+    <Button
+        android:id="@+id/check_a11y"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="检查 A11yService 权限" />
+
+    <Button
+        android:id="@+id/check_shizuku"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="检查 shizuku 权限" />
+
+    <Button
+        android:id="@+id/bindService"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bind Service" />
 
     <Button
         android:id="@+id/cloudmusic_start_service"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="网易云启动自动化脚本" />
+        android:text="启动" />
 
     <Button
         android:id="@+id/cloudmusic_stop_service"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="网易云停止自动化脚本" />
+        android:text="停止" />
 
 
 </LinearLayout>

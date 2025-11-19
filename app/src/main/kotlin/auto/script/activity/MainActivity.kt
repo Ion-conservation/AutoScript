@@ -1,22 +1,14 @@
-package auto.script
+package auto.script.activity
 
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import auto.script.R
 import auto.script.fragment.CloudMusicFragment
 import auto.script.fragment.TaobaoFragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
-
-// MainActivity.kt 顶部
-private val ACTION_START_SCRIPT = "script.netease.script.ACTION_START_SCRIPT"
-
 class MainActivity : AppCompatActivity() {
-
-    // 🚀 将 TAG 移入伴生对象
-    companion object {
-        private const val TAG = "MainActivity" // 使用 const val 声明编译期常量
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,7 +16,7 @@ class MainActivity : AppCompatActivity() {
 
         // 默认加载 TaobaoFragment
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, CloudMusicFragment())
+            .replace(R.id.fragment_container, TaobaoFragment())
             .commit()
 
 
