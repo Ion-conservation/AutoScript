@@ -9,11 +9,13 @@ interface IAssistService {
      */
     void openApp(String packageName);
 
+    void returnApp();
+
     /**
      * 工作流 2 & 3: 获取当前界面的 XML 布局
      * @return 包含界面布局的 XML 字符串
      */
-    String getUiXml();
+    String getUiXml(String filename);
 
     /**
      * 工作流 4: 模拟点击
@@ -39,12 +41,16 @@ interface IAssistService {
      */
     void exit();
 
-    Rect findNodeBounds(String xmlString, String text, String contentDesc);
+    void getXMLAndTap(String filename, String targetResourceId, String targetClass, String targetText, String contentDesc);
+
+    Rect findNodeBounds(String xmlString, String resourceId, String className, String text, String contentDesc);
 
     Rect getBoundsByAccessibilityNodeInfo(in AccessibilityNodeInfo node);
 
     Rect findNodeBoundsByResourceId(String xmlString, String targetId);
 
     Rect parseBounds(String boundsString);
+
+    void parseRemainingTimeAndSave(String xmlString);
 
 }

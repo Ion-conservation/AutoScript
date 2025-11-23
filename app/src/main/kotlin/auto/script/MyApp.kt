@@ -2,14 +2,17 @@ package auto.script
 
 import android.app.Application
 import android.util.Log
-import auto.script.broadcast.BroadcastManager
-import auto.script.broadcast.ScriptBroadcast
-
+import auto.script.common.ScriptCountdownManager
 import auto.script.shizuku.ShizukuManager
-
+import auto.script.viewmodel.AutomationViewModel
 import rikka.shizuku.Shizuku
 
+
 class MyApp : Application() {
+
+    lateinit var shizukuManager: ShizukuManager
+
+    val automationViewModel: AutomationViewModel by lazy { AutomationViewModel() }
 
     companion object {
         private const val TAG = "AutoScriptApp"
@@ -22,24 +25,25 @@ class MyApp : Application() {
 
         instance = this
 
-        initBroadcastManager()
-
-        checkAccessibilityService()
-
         // 正确：监听 binder 就绪
         Shizuku.addBinderReceivedListener {
             Log.d(TAG, "Shizuku binder received")
-            ShizukuManager.init(this) // ← 现在安全初始化
+            shizukuManager.init(this) // ← 现在安全初始化
         }
 
+
+        // 启动前台倒计时检查（仅在进程存活时）
+        ScriptCountdownManager.startCountdownChecker(this)
+
+        // 启动后台 WorkManager 检查（即使 APP 没启动也能运行）
+        ScriptCountdownManager.startBackgroundCountdown(this)
+
+        // 设置每天中午 12 点提醒
+//        ScriptCountdownManager.scheduleDailyReminder(this)
+
+        ScriptCountdownManager.scheduleTestInOneMinute(this)
+
     }
 
-    private fun initBroadcastManager() {
-        val broadcastManager = BroadcastManager(this)
-        ScriptBroadcast.init(broadcastManager)
-    }
 
-    private fun checkAccessibilityService() {
-
-    }
 }

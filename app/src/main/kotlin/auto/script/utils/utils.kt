@@ -8,6 +8,7 @@ import android.os.Handler
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import auto.script.MyApp
 import java.io.File
 
 object ScriptUtils {
@@ -15,11 +16,10 @@ object ScriptUtils {
     const val TAG = "ScriptUtils"
 
     fun saveXmlToLocal(
-        context: Context,
         xmlContent: String,
         fileName: String = "data.xml"
     ) {
-        val file = File(context.filesDir, fileName)
+        val file = File(MyApp.instance.filesDir, fileName)
         file.writeText(xmlContent, Charsets.UTF_8)
     }
 
@@ -124,7 +124,7 @@ object ScriptUtils {
         }
         handler.post(retryRunnable)
     }
-    
+
 }
 
 

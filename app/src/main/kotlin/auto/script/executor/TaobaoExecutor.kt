@@ -8,7 +8,6 @@ import auto.script.common.EventTaskHandler
 import auto.script.gesture.GestureManager
 import auto.script.service.A11yCapability
 import auto.script.shizuku.IAssistService
-import auto.script.shizuku.ShizukuManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -250,11 +249,11 @@ class TaobaoExecutor(
 
 
     private fun handleAchievementCenterButton() {
-        val xml = ShizukuManager.withService { getUiXml() } ?: ""
-        if (xml.isEmpty()) {
-            Log.e(TAG, "Failed to get UI XML")
-            return
-        }
+//        val xml = ShizukuManager.withService { getUiXml() } ?: ""
+//        if (xml.isEmpty()) {
+//            Log.e(TAG, "Failed to get UI XML")
+//            return
+//        }
 
 //        val targetBounds = ScriptUtils.findNodeBounds(xml, "", "成就中心")
 //        if (targetBounds == null) {

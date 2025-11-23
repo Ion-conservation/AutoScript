@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--  通知栏权限  -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.BROADCAST_STICKY" />
+    <!--  AlarmManager 权限  -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!--  WorkManager 权限  -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 1. 声明 Shizuku 需要的权限 -->
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
@@ -64,6 +70,14 @@
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
+        <receiver
+            android:name=".common.ReminderReceiver"
+            android:exported="true" />
+
+        <!--    gork    -->
+        <receiver
+            android:name=".NotificationReceiver"
+            android:exported="false" />
 
     </application>
 

@@ -5,19 +5,19 @@ import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import auto.script.MyApp
 import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.TaobaoExecutor
+import auto.script.shizuku.ShizukuManager
 
 
 class AutomationService : AccessibilityService(), A11yCapability {
 
-    companion object {
-        private val TAG = "AutomationService"
 
-        var instance: AutomationService? = null
-        var taobaoExecutor: TaobaoExecutor? = null
-        var cloudmusicExecutor: CloudmusicExecutor? = null
-    }
+    lateinit var shizukuManager: ShizukuManager
+    private val TAG = "AutomationService"
+    var taobaoExecutor: TaobaoExecutor? = null
+    var cloudmusicExecutor: CloudmusicExecutor? = null
 
     // ------------------ AccessibilityService 生命周期 ------------------
 
@@ -25,7 +25,15 @@ class AutomationService : AccessibilityService(), A11yCapability {
         super.onServiceConnected()
         Log.d(TAG, "A11yService connected. Starting Foreground Service...")
 
-        instance = this
+        (application as MyApp).automationViewModel.updateA11yStatus(true)
+
+        val intent = packageManager.getLaunchIntentForPackage("auto.script")
+        intent.let {
+            // 确保 Activity 被带到前台
+            it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(it)
+            Log.i(TAG, "正在回到脚本...")
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -50,15 +58,15 @@ class AutomationService : AccessibilityService(), A11yCapability {
 
     override fun onUnbind(intent: Intent?): Boolean {
         Log.d(TAG, "onUnbind called. All internal clients have unbound.")
-        // 注意：进程被 LMK 杀死时，此方法不会被调用
-        instance = null
+
+        val viewModel = (application as MyApp).automationViewModel
+        viewModel.updateA11yStatus(false)
 
         return super.onUnbind(intent)
     }
 
 
     // ------------------ AccessibilityService 核心方法 ------------------
-
     override fun performActionGlobal(): Boolean {
         Log.i(TAG, "接收到 来自 executor 的 performAction click")
         // **这里是关键：直接调用父类的 final 方法**
@@ -110,7 +118,6 @@ class AutomationService : AccessibilityService(), A11yCapability {
                 node.getChild(i)?.let { queue.add(it) }
             }
         }
-
         return null
     }
 

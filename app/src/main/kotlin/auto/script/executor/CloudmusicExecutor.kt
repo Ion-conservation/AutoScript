@@ -9,6 +9,7 @@ import auto.script.common.EventTaskHandler
 import auto.script.common.centerPoint
 import auto.script.service.A11yCapability
 import auto.script.shizuku.IAssistService
+import auto.script.utils.ScriptUtils
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -220,6 +221,12 @@ class CloudmusicExecutor(
 
 
     private fun handleLightUpPuzzle() {
+
+        val xml = shizukuService.getUiXml("rest_time.xml")
+
+        ScriptUtils.saveXmlToLocal(xml, "rest_time.xml")
+
+
         executeWithTimeoutRetry(
             description = "步骤 6 ：查找 ‘看视频，点亮拼图’ 按钮并点击。",
             findAction = {

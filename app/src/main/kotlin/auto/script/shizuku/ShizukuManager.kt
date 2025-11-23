@@ -19,17 +19,22 @@ import rikka.shizuku.Shizuku
  * 3. 返回 iAssistService 实例，然后使用实例调用 UserService 中实现的功能，例如 instance.openApp
  * */
 
-object ShizukuManager {
-    private const val TAG = "ShizukuManager"
-    private const val REQUEST_CODE = 100
-    private const val SHIZUKU_PERMISSION_REQUEST_CODE = 1001
+
+class ShizukuManager {
+    private val TAG = "ShizukuManager"
+    private val REQUEST_CODE = 100
+    private val SHIZUKU_PERMISSION_REQUEST_CODE = 1001
 
     // UserService 实例，暴露出去其他模块使用
+
     var iAssistService: IAssistService? = null
     private var isBound = false
 
     private val handler = Handler(Looper.getMainLooper())
 
+    var onStatusChanged: ((Boolean) -> Unit)? = null
+
+    // ------------------ Shizuku 生命周期 ------------------
     private val userServiceArgs = Shizuku.UserServiceArgs(
         ComponentName(BuildConfig.APPLICATION_ID, UserService::class.java.name)
     )
@@ -52,16 +57,21 @@ object ShizukuManager {
             Log.d(TAG, "Shizuku 服务连接成功")
             iAssistService = IAssistService.Stub.asInterface(service)
             isBound = true
+
+            onStatusChanged?.invoke(true)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             Log.w(TAG, "Shizuku 服务断开连接，2 秒后尝试重连。")
             iAssistService = null
             isBound = false
+            onStatusChanged?.invoke(false)
             // 自动重连
             handler.postDelayed({ bindUserService() }, 2000)
         }
     }
+
+    // ------------------ Shizuku 核心方法 ------------------
 
     fun init(context: Context) {
         Log.d(TAG, "ShizukuManager 初始化")
@@ -78,6 +88,15 @@ object ShizukuManager {
             Log.i(TAG, "Shizuku 未授权应用 ADB 权限，请授权。")
             Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
         }
+    }
+
+    fun isShizukuRunning(): Boolean {
+        // 检查 Shizuku 服务是否已启动
+        return Shizuku.pingBinder()
+    }
+
+    fun requestPermission() {
+        Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
     }
 
     fun checkShizukuPermission(): Boolean {
@@ -109,7 +128,7 @@ object ShizukuManager {
             iAssistService!!.block()
         }
     }
-    
+
     fun getService(): IAssistService? = iAssistService
     fun isConnected(): Boolean = isBound && iAssistService != null
 

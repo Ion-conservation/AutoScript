@@ -2,6 +2,7 @@
 <resources>
 
     <style name="Theme.CloudMusic" parent="android:Theme.Material.Light.NoActionBar" />
+
     <style name="Theme.NetEaseAutomation" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
         <!-- <item name="colorPrimary">@color/purple_500</item> -->
@@ -14,5 +15,8 @@
         <!-- Status bar color. -->
         <!-- <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item> -->
         <!-- Customize your theme here. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+
     </style>
 </resources>
