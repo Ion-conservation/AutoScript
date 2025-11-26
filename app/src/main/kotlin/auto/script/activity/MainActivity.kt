@@ -10,7 +10,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import auto.script.R
+import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.ExecutorRepo
+import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
 import auto.script.utils.ScriptUtils
 import auto.script.viewmodel.AutomationViewModel
@@ -31,6 +33,12 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var executorRepo: ExecutorRepo
+
+    @Inject
+    lateinit var taobaoExecutor: TaobaoExecutor
+
+    @Inject
+    lateinit var cloudmusicExecutor: CloudmusicExecutor
     private lateinit var bindServiceHelper: BindService
 
     private var TAG = "MainActivity"
@@ -63,7 +71,7 @@ class MainActivity : AppCompatActivity() {
 
         initBindHelper()
 
-        shizukuManager.start()
+
 
 
         lifecycleScope.launch {
@@ -108,7 +116,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun initBindHelper() {
-        bindServiceHelper = BindService(bindServiceRepo)
+        bindServiceHelper = BindService()
         bindServiceHelper.bind(context = this)
     }
 
@@ -141,9 +149,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         ShizukuButton.setOnClickListener {
-            val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-            if (intent != null) {
-                startActivity(intent)
+            if (shizukuManager.isRunning()) {
+                shizukuManager.start()
+            } else {
+                val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+                if (intent != null) {
+                    startActivity(intent)
+                }
             }
         }
 
@@ -152,24 +164,24 @@ class MainActivity : AppCompatActivity() {
         }
         // CloudMusic 按钮逻辑
         CloudmusicStartButton.setOnClickListener {
-            val cloudmusicExecutor = executorRepo.cloudmusicExecutor
-            cloudmusicExecutor?.startAutomation()
+
+            cloudmusicExecutor.startAutomation()
         }
 
         CloudmusicStopButton.setOnClickListener {
-            val cloudmusicExecutor = executorRepo.cloudmusicExecutor
-            cloudmusicExecutor?.stopAutomation()
+
+            cloudmusicExecutor.stopAutomation()
         }
 
         // Taobao 按钮逻辑
         TaobaoStartButton.setOnClickListener {
-            val taobaoExecutor = executorRepo.taobaoExecutor
-            taobaoExecutor?.startAutomation()
+
+            taobaoExecutor.startAutomation()
         }
 
         TaobaoStopButton.setOnClickListener {
-            val taobaoExecutor = executorRepo.taobaoExecutor
-            taobaoExecutor?.stopAutomation()
+
+            taobaoExecutor.stopAutomation()
         }
     }
 

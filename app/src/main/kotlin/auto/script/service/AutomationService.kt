@@ -12,7 +12,7 @@ import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class AutomationService : AccessibilityService(), A11yCapability {
+class AutomationService @Inject constructor() : AccessibilityService(), A11yCapability {
 
     @Inject
     lateinit var automationServiceRepo: AutomationServiceRepo
@@ -23,6 +23,7 @@ class AutomationService : AccessibilityService(), A11yCapability {
     @Inject
     lateinit var cloudmusicExecutor: CloudmusicExecutor
 
+
     private val TAG = "AutomationService"
 
 
@@ -32,8 +33,10 @@ class AutomationService : AccessibilityService(), A11yCapability {
         super.onServiceConnected()
         Log.d(TAG, "A11yService connected. Starting Foreground Service...")
 
-        automationServiceRepo.setService(this)
         automationServiceRepo.updateA11yServiceConnected(true)
+
+        taobaoExecutor.attachA11yService(this)
+        cloudmusicExecutor.attachA11yService(this)
 
         backToApp()
     }
@@ -42,16 +45,8 @@ class AutomationService : AccessibilityService(), A11yCapability {
         // 分发事件
         if (event == null) return
 
-        val activeExecutor = when {
-            taobaoExecutor?.isTaskActive() == true -> taobaoExecutor
-            cloudmusicExecutor?.isTaskActive() == true -> cloudmusicExecutor
-            else -> null
-        }
-
-        Log.d(TAG, "${taobaoExecutor?.isTaskActive()}, ${cloudmusicExecutor?.isTaskActive()}")
-
-        // 3. 安全调用 handleEvent，无需类型转换
-        activeExecutor?.handleAccessibilityEvent(event)
+        taobaoExecutor.handleAccessibilityEvent(event)
+        cloudmusicExecutor.handleAccessibilityEvent(event)
     }
 
     override fun onInterrupt() {
@@ -61,7 +56,9 @@ class AutomationService : AccessibilityService(), A11yCapability {
     override fun onUnbind(intent: Intent?): Boolean {
         Log.d(TAG, "onUnbind called. All internal clients have unbound.")
         automationServiceRepo.updateA11yServiceConnected(false)
-        automationServiceRepo.setService(null)
+
+        taobaoExecutor.detachA11yService()
+        cloudmusicExecutor.detachA11yService()
         return super.onUnbind(intent)
     }
 
@@ -121,7 +118,7 @@ class AutomationService : AccessibilityService(), A11yCapability {
         return null
     }
 
-    private fun backToApp() {
+    override fun backToApp() {
         val intent = packageManager.getLaunchIntentForPackage("auto.script")
         intent.let {
             // 确保 Activity 被带到前台

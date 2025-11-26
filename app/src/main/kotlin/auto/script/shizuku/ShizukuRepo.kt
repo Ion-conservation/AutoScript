@@ -16,14 +16,6 @@ import javax.inject.Singleton
 @Singleton
 class ShizukuRepo @Inject constructor() {
 
-    // ------------------ UserService 实例 ------------------
-    private val _assistService = MutableStateFlow<IAssistService?>(null)
-    val assistService: StateFlow<IAssistService?> = _assistService
-
-    fun updateAssistService(service: IAssistService?) {
-        _assistService.value = service
-    }
-
     // ------------------ Shizuku 连接状态 ------------------
     private val _shizukuIsConnected = MutableStateFlow(false)
     val shizukuIsConnected: StateFlow<Boolean> = _shizukuIsConnected

@@ -16,16 +16,6 @@ import javax.inject.Singleton
 @Singleton
 class AutomationServiceRepo @Inject constructor() {
 
-    // ------------------ A11yService 实例 ------------------
-    private var service: AutomationService? = null
-
-    fun setService(service: AutomationService?) {
-        this.service = service
-    }
-
-    fun getService(): AutomationService? = service
-
-
     // ------------------ A11yService 连接状态 ------------------
     private val _isA11yServiceConnected = MutableStateFlow(false)
     val isA11yServiceConnected = _isA11yServiceConnected.asStateFlow()

@@ -15,4 +15,6 @@ interface A11yCapability {
         targetClass: String,
         targetText: String
     ): AccessibilityNodeInfo?
+
+    fun backToApp()
 }

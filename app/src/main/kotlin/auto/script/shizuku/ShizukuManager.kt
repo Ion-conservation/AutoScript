@@ -8,6 +8,8 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import auto.script.BuildConfig
+import auto.script.executor.CloudmusicExecutor
+import auto.script.executor.TaobaoExecutor
 import rikka.shizuku.Shizuku
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,19 +19,29 @@ import javax.inject.Singleton
  * Shizuku 库 的作用是在应用中，发指令给 Shizuku APP，相当于客户端。
  * 使用流程：1. 检查 Shizuku APP 授权
  * 2. 绑定 UserService
- * 3. 返回 iAssistService 实例，然后使用实例调用 UserService 中实现的功能，例如 instance.openApp
+ * 3. 返回 shizukuService 实例，然后使用实例调用 UserService 中实现的功能，例如 instance.openApp
  * */
 
 @Singleton
 class ShizukuManager @Inject constructor(
-    private val shizukuRepository: ShizukuRepo
+
 ) {
+
+    @Inject
+    lateinit var shizukuRepository: ShizukuRepo
+
+    @Inject
+    lateinit var taobaoExecutor: TaobaoExecutor
+
+    @Inject
+    lateinit var cloudmusicExecutor: CloudmusicExecutor
     private val TAG = "ShizukuManager"
     private val REQUEST_CODE = 100
 
 
     // UserService 实例，暴露出去其他模块使用
-    var iAssistService: IAssistService? = null
+    private var shizukuService: IShizukuService? = null
+
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -60,15 +72,21 @@ class ShizukuManager @Inject constructor(
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d(TAG, "Shizuku 服务连接成功")
-            iAssistService = IAssistService.Stub.asInterface(service)
-            shizukuRepository.updateAssistService(iAssistService)
+            shizukuService = IShizukuService.Stub.asInterface(service)
+
+            this@ShizukuManager.shizukuService = shizukuService
+
+            taobaoExecutor.attachShizukuService(shizukuService!!)
+            cloudmusicExecutor.attachShizukuService(shizukuService!!)
+
             shizukuRepository.updateConnectStatus(true)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             Log.w(TAG, "Shizuku 服务断开连接，2 秒后尝试重连。")
-            iAssistService = null
-            shizukuRepository.updateAssistService(null)
+            taobaoExecutor.detachShizukuService()
+            cloudmusicExecutor.detachShizukuService()
+
             shizukuRepository.updateConnectStatus(false)
             // 自动重连
             handler.postDelayed({ bindUserService() }, 2000)
@@ -83,6 +101,7 @@ class ShizukuManager @Inject constructor(
         Shizuku.addBinderReceivedListener {
             Log.d(TAG, "Shizuku binder received")
             shizukuRepository.updateConnectStatus(true)
+
 
             var checkPermissionResult: Boolean = checkShizukuPermission()
 
@@ -99,7 +118,7 @@ class ShizukuManager @Inject constructor(
         }
 
         Shizuku.addBinderDeadListener {
-            shizukuRepository.updateAssistService(null)
+
             shizukuRepository.updateConnectStatus(false)
         }
     }
@@ -123,25 +142,29 @@ class ShizukuManager @Inject constructor(
     }
 
 
-    // 提供安全调用封装
-    inline fun <T> withService(block: IAssistService.() -> T): T? {
-        return if (iAssistService == null) {
-            Log.w("ShizukuManager", "iAssistService is NULL, block 未执行")
-            null
-        } else {
-            Log.d("ShizukuManager", "iAssistService 已就绪，执行 block")
-            iAssistService!!.block()
-        }
-    }
+//    // 提供安全调用封装
+//    inline fun <T> withService(block: IShizukuService.() -> T): T? {
+//        return if (shizukuService == null) {
+//            Log.w("ShizukuManager", "shizukuService is NULL, block 未执行")
+//            null
+//        } else {
+//            Log.d("ShizukuManager", "shizukuService 已就绪，执行 block")
+//            shizukuService!!.block()
+//        }
+//    }
 
-    fun getService(): IAssistService? = iAssistService
-    fun isConnected(): Boolean = iAssistService != null
+    fun getService(): IShizukuService? = shizukuService
+    fun isConnected(): Boolean = shizukuService != null
+
+    fun isRunning(): Boolean {
+        return Shizuku.pingBinder()
+    }
 
     fun destroy() {
         try {
             Shizuku.unbindUserService(userServiceArgs, serviceConnection, true)
             Shizuku.removeRequestPermissionResultListener(permissionListener)
-            shizukuRepository.updateAssistService(null)
+
             Log.d(TAG, "Shizuku 已销毁")
         } catch (e: Exception) {
             Log.e(TAG, "销毁失败", e)

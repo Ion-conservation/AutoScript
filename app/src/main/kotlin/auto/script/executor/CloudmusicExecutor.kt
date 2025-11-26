@@ -7,24 +7,33 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.common.EventTaskHandler
 import auto.script.common.centerPoint
-import auto.script.service.A11yCapability
-import auto.script.shizuku.IAssistService
-import auto.script.utils.ScriptUtils
+import auto.script.service.AutomationService
+import auto.script.shizuku.IShizukuService
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class ExecutorBindingModule {
+
+
+}
+
 @Singleton
 class CloudmusicExecutor @Inject constructor(
-    private val a11yCapability: A11yCapability,
-    private val shizukuService: IAssistService
+
 ) : EventTaskHandler {
 
 //    @Inject
-//    lateinit var a11yCapability: A11yCapability
+//    lateinit var a11yService: a11yService
 //
 //    @Inject
-//    lateinit var shizukuService: IAssistService
+//    lateinit var shizukuService: IShizukuService
 
     companion object {
         private const val TAG = "网易云音乐脚本"
@@ -63,6 +72,33 @@ class CloudmusicExecutor @Inject constructor(
         }
 
 
+    }
+
+
+    private var a11yService: AutomationService? = null
+
+    // 提供一个绑定方法
+    fun attachA11yService(service: AutomationService) {
+        this.a11yService = service
+    }
+
+    // 提供一个解绑方法（防止内存泄漏）
+    fun detachA11yService() {
+        this.a11yService = null
+    }
+
+    var shizukuService: IShizukuService? = null
+
+    // 提供一个绑定方法
+    fun attachShizukuService(service: IShizukuService) {
+        Log.i(TAG, "attachShizukuService")
+        Log.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
+        this.shizukuService = service
+    }
+
+    // 提供一个解绑方法（防止内存泄漏）
+    fun detachShizukuService() {
+        this.shizukuService = null
     }
 
     private val isRunning = AtomicBoolean(false)
@@ -131,9 +167,11 @@ class CloudmusicExecutor @Inject constructor(
     }
 
     fun startAutomation() {
+        Log.i(TAG, "startAutomation, $shizukuService")
         isRunning.set(true)
 
-        shizukuService.openApp(APP_PACKAGE_NAME)
+        Log.i(TAG, "startAutomation - Hash: ${this.hashCode()}")
+        shizukuService?.openApp(APP_PACKAGE_NAME)
 
         driveByOuterState(State.LAUNCHING_APP)
     }
@@ -146,7 +184,7 @@ class CloudmusicExecutor @Inject constructor(
         executeWithTimeoutRetry(
             description = "步骤 2 ：查找 APP 启动广告的 ‘跳过’ 按钮并点击。",
             findAction = {
-                a11yCapability.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
+                a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
             },
             executeAction = { skipButton ->
                 if (skipButton != null) {
@@ -166,12 +204,12 @@ class CloudmusicExecutor @Inject constructor(
             description = "步骤 3 ：检查弹窗。",
             findAction = {
                 val dialogResourceId = "com.netease.cloudmusic:id/dsl_dialog_root"
-                a11yCapability.findNodeByReourceId(dialogResourceId)
+                a11yService?.findNodeByReourceId(dialogResourceId)
             },
             executeAction = { dialog ->
                 if (dialog != null) {
                     Log.i(TAG, "步骤 3 结果：检测到弹窗，执行 返回 动作关闭弹窗。")
-                    a11yCapability.performActionGlobal()
+                    a11yService?.performActionGlobal()
                 } else {
                     Log.i(TAG, "步骤 3 结果：找不到 弹窗，执行下一步。")
 
@@ -186,7 +224,7 @@ class CloudmusicExecutor @Inject constructor(
             description = "步骤 4 ：打开侧边栏菜单。",
             findAction = {
                 val sideBarResourceId = "com.netease.cloudmusic:id/menu_icon_container"
-                a11yCapability.findNodeByReourceId(sideBarResourceId)
+                a11yService?.findNodeByReourceId(sideBarResourceId)
             },
             executeAction = { sideBarButton ->
                 if (sideBarButton != null) {
@@ -207,15 +245,15 @@ class CloudmusicExecutor @Inject constructor(
             description = "步骤 5 ：找到 侧边栏菜单 中的文本 ‘免费听VIP歌曲’ 并点击。",
             findAction = {
                 val DCResourceId = "DC_FlatList"
-                val container = a11yCapability.findNodeByReourceId(DCResourceId)
-                a11yCapability.findNodeByText(container, "免费听VIP歌曲")
+                val container = a11yService?.findNodeByReourceId(DCResourceId)
+                a11yService?.findNodeByText(container, "免费听VIP歌曲")
             },
             executeAction = { listenFreeButton ->
                 if (listenFreeButton != null) {
                     Log.i(TAG, "步骤 5 结果：找到 ‘免费听VIP歌曲’ 按钮。")
                     val center = listenFreeButton.centerPoint()
                     center?.let { (x, y) ->
-                        shizukuService.tap(x, y)
+                        shizukuService?.tap(x, y)
                     }
 
                     driveByInnerState(State.LIGHT_UP_PUZZLE, 2000)
@@ -230,24 +268,25 @@ class CloudmusicExecutor @Inject constructor(
 
     private fun handleLightUpPuzzle() {
 
-        val xml = shizukuService.getUiXml("rest_time.xml")
+        val xml = shizukuService?.getUiXml("rest_time.xml")
 
-        ScriptUtils.saveXmlToLocal(xml, "rest_time.xml")
+
+//        ScriptUtils.saveXmlToLocal(xml, "rest_time.xml")
 
 
         executeWithTimeoutRetry(
             description = "步骤 6 ：查找 ‘看视频，点亮拼图’ 按钮并点击。",
             findAction = {
                 val container =
-                    a11yCapability.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
-                a11yCapability.findNodeByText(container, "看视频，点亮拼图")
+                    a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
+                a11yService?.findNodeByText(container, "看视频，点亮拼图")
             },
             executeAction = { puzzleButton ->
                 if (puzzleButton != null) {
                     Log.i(TAG, "步骤 6 结果：找到 ‘免费听VIP歌曲’ 按钮。")
                     val center = puzzleButton.centerPoint()
                     center?.let { (x, y) ->
-                        shizukuService.tap(x, y)
+                        shizukuService?.tap(x, y)
                     }
 
                     driveByInnerState(State.HANDLE_AD_TITLE, 2000)
@@ -265,7 +304,7 @@ class CloudmusicExecutor @Inject constructor(
             description = "查找广告弹窗的文本，判断如何处理。",
             findAction = {
                 val adTitleResourceId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
-                a11yCapability.findNodeByReourceId(adTitleResourceId)
+                a11yService?.findNodeByReourceId(adTitleResourceId)
             },
             executeAction = { titleNode ->
                 if (titleNode != null) {
@@ -293,7 +332,7 @@ class CloudmusicExecutor @Inject constructor(
             executeWithTimeoutRetry(
                 description = "15 秒时间到，点击广告领取奖励。",
                 findAction = {
-                    a11yCapability.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
+                    a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
                 },
                 executeAction = { adButton ->
                     adButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -308,8 +347,8 @@ class CloudmusicExecutor @Inject constructor(
             description = "点击广告详情页的 取消 按钮。",
             findAction = {
 //                val container =
-//                    a11yCapability.findNodeByText(container, "取消")
-                a11yCapability.findNodeByReourceId("android:id/button2")
+//                    a11yService.findNodeByText(container, "取消")
+                a11yService?.findNodeByReourceId("android:id/button2")
             },
             executeAction = { cancelButton ->
                 if (cancelButton == null) {
@@ -329,7 +368,7 @@ class CloudmusicExecutor @Inject constructor(
             handler.removeCallbacksAndMessages(null)
             driveByInnerState(State.LIGHT_UP_PUZZLE)
         } else {
-            a11yCapability.performActionGlobal()
+            a11yService?.performActionGlobal()
             handler.postDelayed({
                 handleReturnApp()
             }, 1000)
@@ -340,7 +379,7 @@ class CloudmusicExecutor @Inject constructor(
         executeWithTimeoutRetry(
             description = "点击跳转APP停留10秒。",
             findAction = {
-                a11yCapability.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
+                a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
             },
             executeAction = { adButton ->
                 adButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)

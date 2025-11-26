@@ -6,8 +6,8 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import auto.script.common.EventTaskHandler
 import auto.script.gesture.GestureManager
-import auto.script.service.A11yCapability
-import auto.script.shizuku.IAssistService
+import auto.script.service.AutomationService
+import auto.script.shizuku.IShizukuService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,10 +17,7 @@ import javax.inject.Singleton
 
 
 @Singleton
-class TaobaoExecutor @Inject constructor(
-    private val a11yCapability: A11yCapability,
-    private val shizukuService: IAssistService
-) : EventTaskHandler {
+class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     companion object {
         private val handler = Handler(Looper.getMainLooper())
 
@@ -36,6 +33,31 @@ class TaobaoExecutor @Inject constructor(
 
     }
 
+    // 使用可空的 var，或者一个接口
+    private var a11yService: AutomationService? = null
+
+    // 提供一个绑定方法
+    fun attachA11yService(service: AutomationService) {
+        this.a11yService = service
+    }
+
+    // 提供一个解绑方法（防止内存泄漏）
+    fun detachA11yService() {
+        this.a11yService = null
+    }
+
+    var shizukuService: IShizukuService? = null
+
+    // 提供一个绑定方法
+    fun attachShizukuService(service: IShizukuService) {
+        this.shizukuService = service
+    }
+
+    // 提供一个解绑方法（防止内存泄漏）
+    fun detachShizukuService() {
+        this.shizukuService = null
+    }
+
 
     private val TAG = "淘宝脚本"
 
@@ -46,7 +68,7 @@ class TaobaoExecutor @Inject constructor(
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private lateinit var gestureManager: GestureManager
-    private var userService: IAssistService? = null
+    private var userService: IShizukuService? = null
 
     private val isRunning = AtomicBoolean(false)
 
@@ -145,7 +167,7 @@ class TaobaoExecutor @Inject constructor(
         // todo：基本配置已完成，剩下具体的工作流程了。
         Log.i(TAG, "接收到 startAutomation 1")
 
-        shizukuService.openApp(APP_PACKAGE_NAME)
+        shizukuService?.openApp(APP_PACKAGE_NAME)
 
         handler.postDelayed({ handleAchievementCenterButton() }, 2000)
 
