@@ -11,12 +11,20 @@ import auto.script.service.A11yCapability
 import auto.script.shizuku.IAssistService
 import auto.script.utils.ScriptUtils
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
 
-
-class CloudmusicExecutor(
+@Singleton
+class CloudmusicExecutor @Inject constructor(
     private val a11yCapability: A11yCapability,
     private val shizukuService: IAssistService
 ) : EventTaskHandler {
+
+//    @Inject
+//    lateinit var a11yCapability: A11yCapability
+//
+//    @Inject
+//    lateinit var shizukuService: IAssistService
 
     companion object {
         private const val TAG = "网易云音乐脚本"

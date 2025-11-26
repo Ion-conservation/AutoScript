@@ -5,19 +5,26 @@ import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import auto.script.MyApp
 import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.TaobaoExecutor
-import auto.script.shizuku.ShizukuManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class AutomationService : AccessibilityService(), A11yCapability {
 
+    @Inject
+    lateinit var automationServiceRepo: AutomationServiceRepo
 
-    lateinit var shizukuManager: ShizukuManager
+    @Inject
+    lateinit var taobaoExecutor: TaobaoExecutor
+
+    @Inject
+    lateinit var cloudmusicExecutor: CloudmusicExecutor
+
     private val TAG = "AutomationService"
-    var taobaoExecutor: TaobaoExecutor? = null
-    var cloudmusicExecutor: CloudmusicExecutor? = null
+
 
     // ------------------ AccessibilityService 生命周期 ------------------
 
@@ -25,15 +32,10 @@ class AutomationService : AccessibilityService(), A11yCapability {
         super.onServiceConnected()
         Log.d(TAG, "A11yService connected. Starting Foreground Service...")
 
-        (application as MyApp).automationViewModel.updateA11yStatus(true)
+        automationServiceRepo.setService(this)
+        automationServiceRepo.updateA11yServiceConnected(true)
 
-        val intent = packageManager.getLaunchIntentForPackage("auto.script")
-        intent.let {
-            // 确保 Activity 被带到前台
-            it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(it)
-            Log.i(TAG, "正在回到脚本...")
-        }
+        backToApp()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -58,10 +60,8 @@ class AutomationService : AccessibilityService(), A11yCapability {
 
     override fun onUnbind(intent: Intent?): Boolean {
         Log.d(TAG, "onUnbind called. All internal clients have unbound.")
-
-        val viewModel = (application as MyApp).automationViewModel
-        viewModel.updateA11yStatus(false)
-
+        automationServiceRepo.updateA11yServiceConnected(false)
+        automationServiceRepo.setService(null)
         return super.onUnbind(intent)
     }
 
@@ -119,6 +119,16 @@ class AutomationService : AccessibilityService(), A11yCapability {
             }
         }
         return null
+    }
+
+    private fun backToApp() {
+        val intent = packageManager.getLaunchIntentForPackage("auto.script")
+        intent.let {
+            // 确保 Activity 被带到前台
+            it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(it)
+            Log.i(TAG, "正在回到脚本...")
+        }
     }
 
 }

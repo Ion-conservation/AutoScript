@@ -1,7 +1,6 @@
 package auto.script.shizuku
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Handler
@@ -10,6 +9,8 @@ import android.os.Looper
 import android.util.Log
 import auto.script.BuildConfig
 import rikka.shizuku.Shizuku
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Shizuku APP 最重要的功能是作为中介，接收应用请求，发送到系统服务器，并返回结果，相当于服务端。
@@ -19,22 +20,35 @@ import rikka.shizuku.Shizuku
  * 3. 返回 iAssistService 实例，然后使用实例调用 UserService 中实现的功能，例如 instance.openApp
  * */
 
-
-class ShizukuManager {
+@Singleton
+class ShizukuManager @Inject constructor(
+    private val shizukuRepository: ShizukuRepo
+) {
     private val TAG = "ShizukuManager"
     private val REQUEST_CODE = 100
-    private val SHIZUKU_PERMISSION_REQUEST_CODE = 1001
+
 
     // UserService 实例，暴露出去其他模块使用
-
     var iAssistService: IAssistService? = null
-    private var isBound = false
 
     private val handler = Handler(Looper.getMainLooper())
 
-    var onStatusChanged: ((Boolean) -> Unit)? = null
 
     // ------------------ Shizuku 生命周期 ------------------
+
+
+    // 请求 Shizuku 权限的回调函数，授权 | 被拒绝
+    private val permissionListener = Shizuku.OnRequestPermissionResultListener { req, grant ->
+        if (req == REQUEST_CODE && grant == PackageManager.PERMISSION_GRANTED) {
+            shizukuRepository.updateGrantedStatus(true)
+            bindUserService()
+        } else {
+            shizukuRepository.updateGrantedStatus(false)
+            Log.w(TAG, "用户已拒绝 Shizuku 权限。")
+        }
+    }
+
+
     private val userServiceArgs = Shizuku.UserServiceArgs(
         ComponentName(BuildConfig.APPLICATION_ID, UserService::class.java.name)
     )
@@ -42,30 +56,20 @@ class ShizukuManager {
         .processNameSuffix("assist")
         .debuggable(BuildConfig.DEBUG)
 
-    // 请求 Shizuku 权限的回调函数，授权 | 被拒绝
-    private val permissionListener = Shizuku.OnRequestPermissionResultListener { req, grant ->
-        if (req == REQUEST_CODE && grant == PackageManager.PERMISSION_GRANTED) {
-            bindUserService()
-        } else {
-            Log.w(TAG, "用户已拒绝 Shizuku 权限。")
-        }
-    }
-
     // Shizuku 连接成功的回调 和 断开连接的回调
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             Log.d(TAG, "Shizuku 服务连接成功")
             iAssistService = IAssistService.Stub.asInterface(service)
-            isBound = true
-
-            onStatusChanged?.invoke(true)
+            shizukuRepository.updateAssistService(iAssistService)
+            shizukuRepository.updateConnectStatus(true)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             Log.w(TAG, "Shizuku 服务断开连接，2 秒后尝试重连。")
             iAssistService = null
-            isBound = false
-            onStatusChanged?.invoke(false)
+            shizukuRepository.updateAssistService(null)
+            shizukuRepository.updateConnectStatus(false)
             // 自动重连
             handler.postDelayed({ bindUserService() }, 2000)
         }
@@ -73,30 +77,31 @@ class ShizukuManager {
 
     // ------------------ Shizuku 核心方法 ------------------
 
-    fun init(context: Context) {
+    fun start() {
         Log.d(TAG, "ShizukuManager 初始化")
 
-        // 绑定授权结果的回调函数
-        Shizuku.addRequestPermissionResultListener(permissionListener)
+        Shizuku.addBinderReceivedListener {
+            Log.d(TAG, "Shizuku binder received")
+            shizukuRepository.updateConnectStatus(true)
 
-        var checkPermissionResult: Boolean = checkShizukuPermission()
+            var checkPermissionResult: Boolean = checkShizukuPermission()
 
-        if (checkPermissionResult) {
-            Log.i(TAG, "Shizuku 已授权应用 ADB 权限，开始绑定 UserService 服务。")
-            bindUserService()
-        } else {
-            Log.i(TAG, "Shizuku 未授权应用 ADB 权限，请授权。")
-            Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
+            if (checkPermissionResult) {
+                Log.i(TAG, "Shizuku 已授权应用 ADB 权限，开始绑定 UserService 服务。")
+                shizukuRepository.updateGrantedStatus(true)
+                bindUserService()
+            } else {
+                // 绑定授权结果的回调函数
+                Log.i(TAG, "Shizuku 未授权应用 ADB 权限，请授权。")
+                Shizuku.addRequestPermissionResultListener(permissionListener)
+                Shizuku.requestPermission(REQUEST_CODE)
+            }
         }
-    }
 
-    fun isShizukuRunning(): Boolean {
-        // 检查 Shizuku 服务是否已启动
-        return Shizuku.pingBinder()
-    }
-
-    fun requestPermission() {
-        Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
+        Shizuku.addBinderDeadListener {
+            shizukuRepository.updateAssistService(null)
+            shizukuRepository.updateConnectStatus(false)
+        }
     }
 
     fun checkShizukuPermission(): Boolean {
@@ -130,12 +135,13 @@ class ShizukuManager {
     }
 
     fun getService(): IAssistService? = iAssistService
-    fun isConnected(): Boolean = isBound && iAssistService != null
+    fun isConnected(): Boolean = iAssistService != null
 
     fun destroy() {
         try {
             Shizuku.unbindUserService(userServiceArgs, serviceConnection, true)
             Shizuku.removeRequestPermissionResultListener(permissionListener)
+            shizukuRepository.updateAssistService(null)
             Log.d(TAG, "Shizuku 已销毁")
         } catch (e: Exception) {
             Log.e(TAG, "销毁失败", e)

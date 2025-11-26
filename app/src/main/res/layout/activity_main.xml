@@ -33,6 +33,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Bind Service" />
+
+        <!--        <Button-->
+        <!--            android:id="@+id/bridgeService"-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:text="Bridge Service" />-->
     </LinearLayout>
 
     <!-- CloudMusic 卡片 -->

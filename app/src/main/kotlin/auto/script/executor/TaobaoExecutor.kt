@@ -12,12 +12,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TaobaoExecutor(
+
+@Singleton
+class TaobaoExecutor @Inject constructor(
     private val a11yCapability: A11yCapability,
     private val shizukuService: IAssistService
-) :
-    EventTaskHandler {
+) : EventTaskHandler {
     companion object {
         private val handler = Handler(Looper.getMainLooper())
 
@@ -32,6 +35,7 @@ class TaobaoExecutor(
         }
 
     }
+
 
     private val TAG = "淘宝脚本"
 

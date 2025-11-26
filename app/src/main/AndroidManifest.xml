@@ -75,9 +75,9 @@
             android:exported="true" />
 
         <!--    gork    -->
-        <receiver
-            android:name=".NotificationReceiver"
-            android:exported="false" />
+        <!--        <receiver-->
+        <!--            android:name=".NotificationReceiver"-->
+        <!--            android:exported="false" />-->
 
     </application>
 

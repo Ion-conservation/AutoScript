@@ -48,6 +48,7 @@ android {
         aidl = true
         buildConfig = true
     }
+
 }
 
 dependencies {
