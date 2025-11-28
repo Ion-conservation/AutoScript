@@ -30,7 +30,7 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
     // ------------------ AccessibilityService 生命周期 ------------------
 
     override fun onServiceConnected() {
-        super.onServiceConnected()
+
         Log.d(TAG, "A11yService connected. Starting Foreground Service...")
 
         automationServiceRepo.updateA11yServiceConnected(true)
@@ -38,8 +38,9 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
         taobaoExecutor.attachA11yService(this)
         cloudmusicExecutor.attachA11yService(this)
 
-        backToApp()
+        super.onServiceConnected()
     }
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         // 分发事件

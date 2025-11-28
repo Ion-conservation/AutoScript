@@ -8,7 +8,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.common.EventTaskHandler
 import auto.script.common.centerPoint
 import auto.script.service.AutomationService
-import auto.script.shizuku.IShizukuService
+import auto.script.shizuku.IMyShizukuService
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -33,7 +33,7 @@ class CloudmusicExecutor @Inject constructor(
 //    lateinit var a11yService: a11yService
 //
 //    @Inject
-//    lateinit var shizukuService: IShizukuService
+//    lateinit var shizukuService: IMyShizukuService
 
     companion object {
         private const val TAG = "网易云音乐脚本"
@@ -87,10 +87,10 @@ class CloudmusicExecutor @Inject constructor(
         this.a11yService = null
     }
 
-    var shizukuService: IShizukuService? = null
+    var shizukuService: IMyShizukuService? = null
 
     // 提供一个绑定方法
-    fun attachShizukuService(service: IShizukuService) {
+    fun attachShizukuService(service: IMyShizukuService) {
         Log.i(TAG, "attachShizukuService")
         Log.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
         this.shizukuService = service
@@ -279,6 +279,7 @@ class CloudmusicExecutor @Inject constructor(
             findAction = {
                 val container =
                     a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
+
                 a11yService?.findNodeByText(container, "看视频，点亮拼图")
             },
             executeAction = { puzzleButton ->

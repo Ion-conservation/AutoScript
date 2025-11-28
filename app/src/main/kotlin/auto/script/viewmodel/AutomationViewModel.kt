@@ -44,7 +44,7 @@ class AutomationViewModel @Inject constructor(
         when (status) {
             ShizukuStatus.NOT_CONNECTED -> ButtonUiState("Shizuku 未连接", true)
             ShizukuStatus.NOT_GRANTED -> ButtonUiState("Shizuku 未授权", true)
-            ShizukuStatus.GRANTED -> ButtonUiState("Shizuku 已授权", false)
+            ShizukuStatus.GRANTED -> ButtonUiState("Shizuku 已授权", true)
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, ButtonUiState("Shizuku 检测中...", true))
 

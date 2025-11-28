@@ -7,7 +7,7 @@ import android.view.accessibility.AccessibilityEvent
 import auto.script.common.EventTaskHandler
 import auto.script.gesture.GestureManager
 import auto.script.service.AutomationService
-import auto.script.shizuku.IShizukuService
+import auto.script.shizuku.IMyShizukuService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,10 +46,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
         this.a11yService = null
     }
 
-    var shizukuService: IShizukuService? = null
+    var shizukuService: IMyShizukuService? = null
 
     // 提供一个绑定方法
-    fun attachShizukuService(service: IShizukuService) {
+    fun attachShizukuService(service: IMyShizukuService) {
         this.shizukuService = service
     }
 
@@ -68,7 +68,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private lateinit var gestureManager: GestureManager
-    private var userService: IShizukuService? = null
+    private var userService: IMyShizukuService? = null
 
     private val isRunning = AtomicBoolean(false)
 

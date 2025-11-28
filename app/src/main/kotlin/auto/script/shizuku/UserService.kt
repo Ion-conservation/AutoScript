@@ -17,7 +17,7 @@ import java.util.Calendar
 import kotlin.system.exitProcess
 
 
-class UserService : IShizukuService.Stub() {
+class UserService : IMyShizukuService.Stub() {
     companion object {
         const val TAG = "UserService"
     }

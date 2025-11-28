@@ -1,7 +1,7 @@
 package auto.script.shizuku;
 
 // 这个接口定义了我们的高权限服务能做什么
-interface IShizukuService {
+interface IMyShizukuService {
 
     /**
      * 工作流 1: 打开一个 App

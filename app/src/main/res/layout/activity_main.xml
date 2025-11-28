@@ -27,18 +27,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="检查 Shizuku 权限" />
-
-        <Button
-            android:id="@+id/bindService"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Bind Service" />
-
-        <!--        <Button-->
-        <!--            android:id="@+id/bridgeService"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:text="Bridge Service" />-->
+        
     </LinearLayout>
 
     <!-- CloudMusic 卡片 -->

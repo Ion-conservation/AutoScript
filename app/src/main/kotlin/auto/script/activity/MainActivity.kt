@@ -14,6 +14,7 @@ import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.ExecutorRepo
 import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
+import auto.script.shizuku.ShizukuRepo
 import auto.script.utils.ScriptUtils
 import auto.script.viewmodel.AutomationViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,6 +30,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var shizukuManager: ShizukuManager
 
     @Inject
+    lateinit var shizukuRepo: ShizukuRepo
+
+    @Inject
     lateinit var bindServiceRepo: BindServiceRepo
 
     @Inject
@@ -39,16 +43,12 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var cloudmusicExecutor: CloudmusicExecutor
-    private lateinit var bindServiceHelper: BindService
 
     private var TAG = "MainActivity"
 
     // 公共按钮
     private lateinit var A11yServiceButton: Button
     private lateinit var ShizukuButton: Button
-    private lateinit var BindServiceButton: Button
-//    private lateinit var BridgeServiceButton: Button
-
 
     // CloudMusic 按钮
     private lateinit var CloudmusicStartButton: Button
@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity() {
     // Taobao 按钮
     private lateinit var TaobaoStartButton: Button
     private lateinit var TaobaoStopButton: Button
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,10 +68,7 @@ class MainActivity : AppCompatActivity() {
 
         initButtonListener() // 按钮绑定事件
 
-        initBindHelper()
-
-
-
+        initShizukuStatus()
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -89,36 +85,14 @@ class MainActivity : AppCompatActivity() {
                         A11yServiceButton.isEnabled = ui.buttonEnabled
                     }
                 }
-
-//                launch {
-//                    viewModel.bridgeServiceUiState.collect { ui ->
-//                        BridgeServiceButton.text = ui.text
-//                        BridgeServiceButton.isEnabled = ui.buttonEnabled
-//                    }
-//                }
-
-                launch {
-                    viewModel.bindServiceUiState.collect { ui ->
-                        BindServiceButton.text = ui.text
-                        BindServiceButton.isEnabled = ui.buttonEnabled
-                    }
-                }
-
-
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        bindServiceHelper.unBind(context = this)
     }
 
-
-    private fun initBindHelper() {
-        bindServiceHelper = BindService()
-        bindServiceHelper.bind(context = this)
-    }
 
     private fun setStyle() {
         // 让内容延伸到状态栏
@@ -131,8 +105,6 @@ class MainActivity : AppCompatActivity() {
     private fun initButton() {
         A11yServiceButton = findViewById(R.id.check_a11y)
         ShizukuButton = findViewById(R.id.check_shizuku)
-        BindServiceButton = findViewById(R.id.bindService)
-//        BridgeServiceButton = findViewById(R.id.bridgeService)
 
         CloudmusicStartButton = findViewById(R.id.cloudmusic_start_service)
         CloudmusicStopButton = findViewById(R.id.cloudmusic_stop_service)
@@ -149,19 +121,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         ShizukuButton.setOnClickListener {
-            if (shizukuManager.isRunning()) {
-                shizukuManager.start()
-            } else {
-                val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-                if (intent != null) {
-                    startActivity(intent)
-                }
-            }
+            initMyShizukuService()
         }
 
-        BindServiceButton.setOnClickListener {
-            initBindHelper()
-        }
         // CloudMusic 按钮逻辑
         CloudmusicStartButton.setOnClickListener {
 
@@ -183,6 +145,14 @@ class MainActivity : AppCompatActivity() {
 
             taobaoExecutor.stopAutomation()
         }
+    }
+
+    fun initShizukuStatus() {
+        shizukuManager.setInitStatus()
+    }
+
+    fun initMyShizukuService() {
+        shizukuManager.initMyShizukuService(this)
     }
 
 
