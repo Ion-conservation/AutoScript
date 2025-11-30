@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Rect
 import android.os.Handler
 import android.provider.Settings
-import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.MyApp
 import java.io.File
@@ -49,13 +48,13 @@ object ScriptUtils {
         context: Context,
         serviceClass: Class<out AccessibilityService>
     ): Boolean {
-        Log.i(TAG, "${context.packageName}/${serviceClass.canonicalName}")
+        ScriptLogger.i(TAG, "${context.packageName}/${serviceClass.canonicalName}")
 
         val enabledServices = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
         )
-        Log.d(TAG, "Enabled services raw: $enabledServices")
+        ScriptLogger.d(TAG, "Enabled services raw: $enabledServices")
 
         val serviceId = "${context.packageName}/${serviceClass.canonicalName}"
         return try {
@@ -97,7 +96,7 @@ object ScriptUtils {
         onFailure: () -> Unit
     ) {
         if (description.isNotEmpty()) {
-            Log.i(TAG, description)
+            ScriptLogger.i(TAG, description)
         }
 
         val startTime = System.currentTimeMillis()

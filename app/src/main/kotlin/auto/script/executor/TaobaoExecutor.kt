@@ -2,12 +2,12 @@ package auto.script.executor
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import auto.script.common.EventTaskHandler
 import auto.script.gesture.GestureManager
 import auto.script.service.AutomationService
 import auto.script.shizuku.IMyShizukuService
+import auto.script.utils.ScriptLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -87,7 +87,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //    }
 
 //    override fun onServiceConnected() {
-//        Log.i(TAG, "无障碍服务已连接。")
+//        ScriptLogger.i(TAG, "无障碍服务已连接。")
 //        super.onServiceConnected()
 //
 //
@@ -96,14 +96,14 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 ////
 //        val currentPackage = rootInActiveWindow?.packageName?.toString()
 ////
-////        Log.i(TAG, "currentPackage: $currentPackage")
+////        ScriptLogger.i(TAG, "currentPackage: $currentPackage")
 //        if (currentPackage == "com.android.settings") {
 //            val intent = packageManager.getLaunchIntentForPackage("auto.script")
 //            intent.let {
 //                // 确保 Activity 被带到前台
 //                it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
 //                startActivity(it)
-//                Log.i(TAG, "正在回到脚本...")
+//                ScriptLogger.i(TAG, "正在回到脚本...")
 //            }
 //        }
 //
@@ -111,18 +111,18 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 
 //    override fun onAccessibilityEvent(event: AccessibilityEvent) {
 //        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
-////            Log.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED packageName: ${event.packageName}")
-////            Log.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED className: ${event.className.toString()}")
+////            ScriptLogger.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED packageName: ${event.packageName}")
+////            ScriptLogger.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED className: ${event.className.toString()}")
 //
 //
 //        }
 //
 //        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-//            Log.d(TAG, "TYPE_WINDOW_STATE_CHANGED packageName: ${event.packageName}")
-//            Log.d(TAG, "TYPE_WINDOW_STATE_CHANGED className: ${event.className.toString()}")
+//            ScriptLogger.d(TAG, "TYPE_WINDOW_STATE_CHANGED packageName: ${event.packageName}")
+//            ScriptLogger.d(TAG, "TYPE_WINDOW_STATE_CHANGED className: ${event.className.toString()}")
 //
 //            if (event.packageName == APP_PACKAGE_NAME && currentState == State.LAUNCHING_APP) {
-//                Log.i(TAG, "${APP_PACKAGE_NAME} 启动成功。")
+//                ScriptLogger.i(TAG, "${APP_PACKAGE_NAME} 启动成功。")
 //                driveByInnerState(State.WAIT_TO_CLICK_ACHIEVEMENT_CENTER_BUTTON, 2000)
 //            }
 //
@@ -131,19 +131,19 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //    }
 
 //    override fun onUnbind(intent: Intent?): Boolean {
-//        Log.w(TAG, "AccessibilityService onUnbind 被调用")
+//        ScriptLogger.w(TAG, "AccessibilityService onUnbind 被调用")
 //
 //        // 打印调用栈
 //        val stackTrace = Throwable().stackTrace
 //        stackTrace.forEach { element ->
-//            Log.w(TAG, "onUnbind stack: $element")
+//            ScriptLogger.w(TAG, "onUnbind stack: $element")
 //        }
 //
 //        return super.onUnbind(intent)
 //    }
 
 //    override fun onInterrupt() {
-//        Log.w(TAG, "服务被中断。")
+//        ScriptLogger.w(TAG, "服务被中断。")
 //    }
 
 //    override fun onDestroy() {
@@ -165,7 +165,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     fun startAutomation() {
         isRunning.set(true)
         // todo：基本配置已完成，剩下具体的工作流程了。
-        Log.i(TAG, "接收到 startAutomation 1")
+        ScriptLogger.i(TAG, "接收到 startAutomation 1")
 
         shizukuService?.openApp(APP_PACKAGE_NAME)
 
@@ -179,10 +179,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //                // delay(1000) // 等待 App 打开
 //
 //                // 工作流 2 & 3: 获取 XML 并查找节点
-//                Log.d(TAG, "Workflow 2&3: Getting UI XML and finding node...")
+//                ScriptLogger.d(TAG, "Workflow 2&3: Getting UI XML and finding node...")
 //                val xml = service.getUiXml()
 //                if (xml.startsWith("Error:")) {
-//                    Log.e(TAG, "Failed to get UI XML: $xml")
+//                    ScriptLogger.e(TAG, "Failed to get UI XML: $xml")
 //                    return@launch
 //                }
 //
@@ -190,10 +190,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //                val targetBounds = findNodeBounds(xml, "登录", "login_button_desc")
 //
 //                if (targetBounds == null) {
-//                    Log.w(TAG, "Could not find '登录' button on screen.")
+//                    ScriptLogger.w(TAG, "Could not find '登录' button on screen.")
 //                    // 找不到按钮？也许需要滑动
 //                    // 工作流 5: 模拟滑动 (从屏幕中间向下滑动)
-//                    Log.d(TAG, "Workflow 5: Swiping down...")
+//                    ScriptLogger.d(TAG, "Workflow 5: Swiping down...")
 //                    service.swipe(500, 1500, 500, 500, 300)
 //                    delay(1000)
 //
@@ -203,14 +203,14 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //                        findNodeBounds(xmlAfterSwipe, "登录", "login_button_desc")
 //
 //                    if (boundsAfterSwipe != null) {
-//                        Log.d(TAG, "Workflow 4: Found node after swipe! Tapping...")
+//                        ScriptLogger.d(TAG, "Workflow 4: Found node after swipe! Tapping...")
 //                        service.tap(boundsAfterSwipe.centerX(), boundsAfterSwipe.centerY())
 //                    }
 //
 //                } else {
 //                    // 找到了按钮！
 //                    // 工作流 4: 模拟点击
-//                    Log.d(TAG, "Workflow 4: Found node! Tapping...")
+//                    ScriptLogger.d(TAG, "Workflow 4: Found node! Tapping...")
 //                    service.tap(targetBounds.centerX(), targetBounds.centerY())
 //                }
 //
@@ -218,13 +218,13 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //                delay(2000)
 //
 //                // 工作流 6: 模拟返回
-//                Log.d(TAG, "Workflow 6: Simulating back press...")
+//                ScriptLogger.d(TAG, "Workflow 6: Simulating back press...")
 //                service.back()
 //
-//                Log.d(TAG, "Automation cycle complete.")
+//                ScriptLogger.d(TAG, "Automation cycle complete.")
 //
 //            } catch (e: Exception) {
-//                Log.e(TAG, "Automation workflow failed", e)
+//                ScriptLogger.e(TAG, "Automation workflow failed", e)
 //            }
 
     }
@@ -245,10 +245,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //                // 步骤 1：启动 APP
 //                driveByOuterState(State.LAUNCHING_APP)
 //                startActivity(it)
-//                Log.i(TAG, "步骤 1：启动淘宝...")
+//                ScriptLogger.i(TAG, "步骤 1：启动淘宝...")
 //            }
 //        } else {
-//            Log.e(
+//            ScriptLogger.e(
 //                TAG,
 //                "无法获取网易云音乐的启动 Intent。请检查 APP_PACKAGE_NAME 是否正确：$APP_PACKAGE_NAME"
 //            )
@@ -257,7 +257,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 
 //    private fun handleStateLogic() {
 //        if (rootInActiveWindow == null) {
-//            Log.w(TAG, "Root node is null, cannot proceed.")
+//            ScriptLogger.w(TAG, "Root node is null, cannot proceed.")
 //            return
 //        }
 //
@@ -277,13 +277,13 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     private fun handleAchievementCenterButton() {
 //        val xml = ShizukuManager.withService { getUiXml() } ?: ""
 //        if (xml.isEmpty()) {
-//            Log.e(TAG, "Failed to get UI XML")
+//            ScriptLogger.e(TAG, "Failed to get UI XML")
 //            return
 //        }
 
 //        val targetBounds = ScriptUtils.findNodeBounds(xml, "", "成就中心")
 //        if (targetBounds == null) {
-//            Log.w(TAG, "Could not find '成就中心' button on screen.")
+//            ScriptLogger.w(TAG, "Could not find '成就中心' button on screen.")
 //            return
 //        }
 //
@@ -293,7 +293,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //        } ?: false
 //
 //        if (!success) {
-//            Log.e(TAG, "Tap failed, service not available")
+//            ScriptLogger.e(TAG, "Tap failed, service not available")
 //        }
     }
 
@@ -324,7 +324,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 
     fun stopAutomation() {
         isRunning.set(false)
-        Log.i(TAG, "接收到 stopAutomation")
+        ScriptLogger.i(TAG, "接收到 stopAutomation")
         currentState = State.IDLE
         handler.removeCallbacksAndMessages(null) // 清除所有延迟任务
     }
@@ -333,13 +333,13 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //        // 状态改变前，清除所有延时任务
 //        handler.removeCallbacksAndMessages(null) // 清除所有延迟任务
 //        currentState = newState
-//        Log.d(TAG, "内部状态改变 $newState，触发事件 handleStateLogic")
+//        ScriptLogger.d(TAG, "内部状态改变 $newState，触发事件 handleStateLogic")
 //        handler.postDelayed({ handleStateLogic() }, delay)
 //    }
 
 //    private fun driveByOuterState(newState: State) {
 //        currentState = newState
-//        Log.d(TAG, "等待 TYPE_WINDOW_STATE_CHANGED 改变，触发事件")
+//        ScriptLogger.d(TAG, "等待 TYPE_WINDOW_STATE_CHANGED 改变，触发事件")
 //    }
 //
 //    private fun executeWithTimeoutRetry(
@@ -351,7 +351,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //        executeAction: (node: AccessibilityNodeInfo?) -> Unit,
 //    ) {
 //        if (description.isNotEmpty()) {
-//            Log.i(TAG, description)
+//            ScriptLogger.i(TAG, description)
 //        }
 //
 //        val startTime = System.currentTimeMillis()
@@ -380,7 +380,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //    }
 //
 //    private fun registerBroadcast() {
-//        Log.i(TAG, "创建广播接收器。")
+//        ScriptLogger.i(TAG, "创建广播接收器。")
 //
 //        ScriptBroadcast.register("taobao", "start") { intent ->
 //            startAutomation()
@@ -392,7 +392,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //    }
 //
 //    private fun initGestureManeger() {
-//        Log.i(TAG, "初始化 GestureManeger 实例。")
+//        ScriptLogger.i(TAG, "初始化 GestureManeger 实例。")
 //        gestureManager = GestureManager(this)
 //    }
 

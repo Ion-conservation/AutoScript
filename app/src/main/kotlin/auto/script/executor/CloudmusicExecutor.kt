@@ -2,13 +2,13 @@ package auto.script.executor
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.common.EventTaskHandler
 import auto.script.common.centerPoint
 import auto.script.service.AutomationService
 import auto.script.shizuku.IMyShizukuService
+import auto.script.utils.ScriptLogger
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -91,8 +91,8 @@ class CloudmusicExecutor @Inject constructor(
 
     // 提供一个绑定方法
     fun attachShizukuService(service: IMyShizukuService) {
-        Log.i(TAG, "attachShizukuService")
-        Log.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
+        ScriptLogger.i(TAG, "attachShizukuService")
+        ScriptLogger.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
         this.shizukuService = service
     }
 
@@ -105,17 +105,20 @@ class CloudmusicExecutor @Inject constructor(
     override fun isTaskActive(): Boolean = isRunning.get()
 
     override fun handleAccessibilityEvent(event: AccessibilityEvent) {
-        Log.d(TAG, "IN handleAccessibilityEvent")
+        ScriptLogger.d(TAG, "IN handleAccessibilityEvent")
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
 
-            Log.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED packageName: ${event.packageName}")
-            Log.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED className: ${event.className.toString()}")
+            ScriptLogger.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED packageName: ${event.packageName}")
+            ScriptLogger.d(
+                TAG,
+                "TYPE_WINDOW_CONTENT_CHANGED className: ${event.className.toString()}"
+            )
 
             if (
                 currentState == State.LAUNCHING_APP
                 && event.packageName.toString() == APP_PACKAGE_NAME
             ) {
-                Log.i(TAG, "步骤 1 结果：网易云音乐 APP 启动成功。 ${event.eventType}")
+                ScriptLogger.i(TAG, "步骤 1 结果：网易云音乐 APP 启动成功。 ${event.eventType}")
                 driveByInnerState(State.WAIT_TO_CLICK_SKIP_BUTTON)
             }
         }
@@ -123,8 +126,11 @@ class CloudmusicExecutor @Inject constructor(
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
 
-            Log.d(TAG, "TYPE_WINDOW_STATE_CHANGED packageName: ${event.packageName}")
-            Log.d(TAG, "TYPE_WINDOW_STATE_CHANGED className: ${event.className.toString()}")
+            ScriptLogger.d(TAG, "TYPE_WINDOW_STATE_CHANGED packageName: ${event.packageName}")
+            ScriptLogger.d(
+                TAG,
+                "TYPE_WINDOW_STATE_CHANGED className: ${event.className.toString()}"
+            )
 
             currentActivity = event.className.toString()
         }
@@ -167,10 +173,10 @@ class CloudmusicExecutor @Inject constructor(
     }
 
     fun startAutomation() {
-        Log.i(TAG, "startAutomation, $shizukuService")
+        ScriptLogger.i(TAG, "startAutomation, $shizukuService")
         isRunning.set(true)
 
-        Log.i(TAG, "startAutomation - Hash: ${this.hashCode()}")
+        ScriptLogger.i(TAG, "startAutomation - Hash: ${this.hashCode()}")
         shizukuService?.openApp(APP_PACKAGE_NAME)
 
         driveByOuterState(State.LAUNCHING_APP)
@@ -188,10 +194,13 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { skipButton ->
                 if (skipButton != null) {
-                    Log.i(TAG, "步骤 2 结果：找到 App 启动广告 '跳过' 按钮，尝试点击。")
+                    ScriptLogger.i(TAG, "步骤 2 结果：找到 App 启动广告 '跳过' 按钮，尝试点击。")
                     skipButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 } else {
-                    Log.i(TAG, "步骤 2 结果：找不到 App 启动广告 '跳过' 按钮，等待下一个状态。")
+                    ScriptLogger.i(
+                        TAG,
+                        "步骤 2 结果：找不到 App 启动广告 '跳过' 按钮，等待下一个状态。"
+                    )
                 }
 
                 driveByInnerState(State.CHECK_IF_DIALOG, 2000)
@@ -208,10 +217,10 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { dialog ->
                 if (dialog != null) {
-                    Log.i(TAG, "步骤 3 结果：检测到弹窗，执行 返回 动作关闭弹窗。")
+                    ScriptLogger.i(TAG, "步骤 3 结果：检测到弹窗，执行 返回 动作关闭弹窗。")
                     a11yService?.performActionGlobal()
                 } else {
-                    Log.i(TAG, "步骤 3 结果：找不到 弹窗，执行下一步。")
+                    ScriptLogger.i(TAG, "步骤 3 结果：找不到 弹窗，执行下一步。")
 
                 }
                 driveByInnerState(State.OPEN_SIDE_BAR, 2000)
@@ -228,12 +237,12 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { sideBarButton ->
                 if (sideBarButton != null) {
-                    Log.i(TAG, "步骤 4 结果：找到 侧边栏菜单按钮，点击。")
+                    ScriptLogger.i(TAG, "步骤 4 结果：找到 侧边栏菜单按钮，点击。")
                     sideBarButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
                     driveByInnerState(State.WAIT_TO_CLICK_FREE_BUTTON, 2000)
                 } else {
-                    Log.i(TAG, "步骤 42 结果：退出程序。")
+                    ScriptLogger.i(TAG, "步骤 42 结果：退出程序。")
                     stopAutomation()
                 }
             }
@@ -250,7 +259,7 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { listenFreeButton ->
                 if (listenFreeButton != null) {
-                    Log.i(TAG, "步骤 5 结果：找到 ‘免费听VIP歌曲’ 按钮。")
+                    ScriptLogger.i(TAG, "步骤 5 结果：找到 ‘免费听VIP歌曲’ 按钮。")
                     val center = listenFreeButton.centerPoint()
                     center?.let { (x, y) ->
                         shizukuService?.tap(x, y)
@@ -258,7 +267,7 @@ class CloudmusicExecutor @Inject constructor(
 
                     driveByInnerState(State.LIGHT_UP_PUZZLE, 2000)
                 } else {
-                    Log.i(TAG, "步骤 5 结果：查找 ‘免费听VIP歌曲’ 按钮失败，退出程序。")
+                    ScriptLogger.i(TAG, "步骤 5 结果：查找 ‘免费听VIP歌曲’ 按钮失败，退出程序。")
                     stopAutomation()
                 }
             }
@@ -284,7 +293,7 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { puzzleButton ->
                 if (puzzleButton != null) {
-                    Log.i(TAG, "步骤 6 结果：找到 ‘免费听VIP歌曲’ 按钮。")
+                    ScriptLogger.i(TAG, "步骤 6 结果：找到 ‘免费听VIP歌曲’ 按钮。")
                     val center = puzzleButton.centerPoint()
                     center?.let { (x, y) ->
                         shizukuService?.tap(x, y)
@@ -292,7 +301,7 @@ class CloudmusicExecutor @Inject constructor(
 
                     driveByInnerState(State.HANDLE_AD_TITLE, 2000)
                 } else {
-                    Log.i(TAG, "步骤 6 结果：找不到 ‘看视频，点亮拼图’ 按钮，退出程序。")
+                    ScriptLogger.i(TAG, "步骤 6 结果：找不到 ‘看视频，点亮拼图’ 按钮，退出程序。")
                     stopAutomation()
                 }
             }
@@ -311,17 +320,17 @@ class CloudmusicExecutor @Inject constructor(
                 if (titleNode != null) {
                     val text = titleNode.text?.toString()
                     if (text == "看15秒后点击") {
-                        Log.i(TAG, "看15秒后点击，15 秒后状态变成 State.RETURNING_TO_APP ")
+                        ScriptLogger.i(TAG, "看15秒后点击，15 秒后状态变成 State.RETURNING_TO_APP ")
                         driveByInnerState(State.CLICK_AD_AFTER_15_SECOND)
                     } else if (text == "点击跳转APP停留10秒") {
-                        Log.i(TAG, "点击跳转APP停留10秒")
+                        ScriptLogger.i(TAG, "点击跳转APP停留10秒")
                         driveByInnerState(State.CLICK_AD_IMMEDIATE)
                     } else {
-                        Log.i(TAG, "不知名文本。")
+                        ScriptLogger.i(TAG, "不知名文本。")
                         stopAutomation()
                     }
                 } else {
-                    Log.i(TAG, "找不到广告弹窗的文本。")
+                    ScriptLogger.i(TAG, "找不到广告弹窗的文本。")
                     stopAutomation()
                 }
             }
@@ -353,7 +362,7 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { cancelButton ->
                 if (cancelButton == null) {
-                    Log.i(TAG, "找不到取消按钮。")
+                    ScriptLogger.i(TAG, "找不到取消按钮。")
                 }
                 cancelButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 handler.postDelayed({
@@ -394,13 +403,13 @@ class CloudmusicExecutor @Inject constructor(
         // 状态改变前，清除所有延时任务
         handler.removeCallbacksAndMessages(null) // 清除所有延迟任务
         currentState = newState
-        Log.d(TAG, "内部状态改变 $newState，触发事件 handleStateLogic")
+        ScriptLogger.d(TAG, "内部状态改变 $newState，触发事件 handleStateLogic")
         handler.postDelayed({ handleStateLogic() }, delay)
     }
 
     private fun driveByOuterState(newState: State) {
         currentState = newState
-        Log.d(TAG, "等待 TYPE_WINDOW_STATE_CHANGED 改变，触发事件")
+        ScriptLogger.d(TAG, "等待 TYPE_WINDOW_STATE_CHANGED 改变，触发事件")
     }
 
     private fun executeWithTimeoutRetry(
@@ -412,7 +421,7 @@ class CloudmusicExecutor @Inject constructor(
         executeAction: (node: AccessibilityNodeInfo?) -> Unit,
     ) {
         if (description.isNotEmpty()) {
-            Log.i(TAG, description)
+            ScriptLogger.i(TAG, description)
         }
 
         val startTime = System.currentTimeMillis()

@@ -2,11 +2,11 @@ package auto.script.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.TaobaoExecutor
+import auto.script.utils.ScriptLogger
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -31,7 +31,7 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
 
     override fun onServiceConnected() {
 
-        Log.d(TAG, "A11yService connected. Starting Foreground Service...")
+        ScriptLogger.d(TAG, "A11yService connected. Starting Foreground Service...")
 
         automationServiceRepo.updateA11yServiceConnected(true)
 
@@ -51,11 +51,11 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
     }
 
     override fun onInterrupt() {
-        Log.w(TAG, "A11yService interrupted.")
+        ScriptLogger.d(TAG, "A11yService interrupted.")
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        Log.d(TAG, "onUnbind called. All internal clients have unbound.")
+        ScriptLogger.d(TAG, "onUnbind called. All internal clients have unbound.")
         automationServiceRepo.updateA11yServiceConnected(false)
 
         taobaoExecutor.detachA11yService()
@@ -66,7 +66,7 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
 
     // ------------------ AccessibilityService 核心方法 ------------------
     override fun performActionGlobal(): Boolean {
-        Log.i(TAG, "接收到 来自 executor 的 performAction click")
+        ScriptLogger.i(TAG, "接收到 来自 executor 的 performAction click")
         // **这里是关键：直接调用父类的 final 方法**
         return super.performGlobalAction(GLOBAL_ACTION_BACK)
     }
@@ -125,7 +125,7 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
             // 确保 Activity 被带到前台
             it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             startActivity(it)
-            Log.i(TAG, "正在回到脚本...")
+            ScriptLogger.i(TAG, "正在回到脚本...")
         }
     }
 

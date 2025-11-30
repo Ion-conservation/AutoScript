@@ -4,7 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityService.GestureResultCallback
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
-import android.util.Log
+import auto.script.utils.ScriptLogger
 
 class GestureManager(private val service: AccessibilityService) {
     private val TAG = "GestureManager"
@@ -20,11 +20,11 @@ class GestureManager(private val service: AccessibilityService) {
 
         service.dispatchGesture(gesture, object : GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription?) {
-                Log.i(TAG, "✅ 坐标点击成功 ($x, $y)")
+                ScriptLogger.i(TAG, "✅ 坐标点击成功 ($x, $y)")
             }
 
             override fun onCancelled(gestureDescription: GestureDescription?) {
-                Log.w(TAG, "❌ 坐标点击被取消 ($x, $y)")
+                ScriptLogger.d(TAG, "❌ 坐标点击被取消 ($x, $y)")
             }
         }, null)
     }

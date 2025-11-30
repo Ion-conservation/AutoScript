@@ -15,6 +15,7 @@ import auto.script.executor.ExecutorRepo
 import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
 import auto.script.shizuku.ShizukuRepo
+import auto.script.utils.LogSharer
 import auto.script.utils.ScriptUtils
 import auto.script.viewmodel.AutomationViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -49,6 +50,8 @@ class MainActivity : AppCompatActivity() {
     // 公共按钮
     private lateinit var A11yServiceButton: Button
     private lateinit var ShizukuButton: Button
+
+    private lateinit var ShareButton: Button
 
     // CloudMusic 按钮
     private lateinit var CloudmusicStartButton: Button
@@ -105,6 +108,7 @@ class MainActivity : AppCompatActivity() {
     private fun initButton() {
         A11yServiceButton = findViewById(R.id.check_a11y)
         ShizukuButton = findViewById(R.id.check_shizuku)
+        ShareButton = findViewById(R.id.share_log)
 
         CloudmusicStartButton = findViewById(R.id.cloudmusic_start_service)
         CloudmusicStopButton = findViewById(R.id.cloudmusic_stop_service)
@@ -122,6 +126,10 @@ class MainActivity : AppCompatActivity() {
 
         ShizukuButton.setOnClickListener {
             initMyShizukuService()
+        }
+
+        ShareButton.setOnClickListener {
+            shareLog()
         }
 
         // CloudMusic 按钮逻辑
@@ -153,6 +161,10 @@ class MainActivity : AppCompatActivity() {
 
     fun initMyShizukuService() {
         shizukuManager.initMyShizukuService(this)
+    }
+
+    fun shareLog() {
+        LogSharer.shareLogToWeChat(this)
     }
 
 
