@@ -34,6 +34,16 @@ android {
                 "proguard-rules.pro"
             )
         }
+        // 新增 dev 构建类型
+        create("dev") {
+            // 是否可调试
+            isDebuggable = true
+            // 在原有 applicationId 后加后缀，避免和 release 冲突
+            applicationIdSuffix = ".dev"
+            // 在版本名后加后缀，方便区分
+            versionNameSuffix = "-dev"
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21

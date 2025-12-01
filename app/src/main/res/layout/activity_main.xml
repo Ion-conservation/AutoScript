@@ -4,7 +4,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:padding="50dp"
     android:background="@android:color/background_light">
 
     <!-- 公共操作按钮 -->

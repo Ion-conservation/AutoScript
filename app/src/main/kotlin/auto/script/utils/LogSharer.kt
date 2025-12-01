@@ -70,4 +70,62 @@ object LogSharer {
             })
         }
     }
+
+    fun shareSpecificFile(context: Context, file: File) {
+        if (!file.exists()) {
+            Toast.makeText(context, "文件不存在", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            // 1. 获取 Uri (必须与 Manifest 和 file_paths.xml 对应)
+            val authority = "${context.packageName}.fileprovider"
+            val contentUri: Uri = FileProvider.getUriForFile(context, authority, file)
+
+            // 2. 构建 Intent
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_STREAM, contentUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // 如果是从 Service 启动 Activity，需要加这个 Flag
+                if (context !is android.app.Activity) {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                setPackage("com.tencent.mm") // 尝试直接拉起微信
+            }
+
+            // 3. 启动
+            context.startActivity(intent)
+
+        } catch (e: Exception) {
+            // 失败回退逻辑：清除包名，让用户自己选
+            try {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(
+                        Intent.EXTRA_STREAM,
+                        FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.fileprovider",
+                            file
+                        )
+                    )
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (context !is android.app.Activity) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                }
+                // 清除包名限制
+                intent.setPackage(null)
+
+                context.startActivity(Intent.createChooser(intent, "分享日志").apply {
+                    if (context !is android.app.Activity) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                })
+            } catch (ex: Exception) {
+                Toast.makeText(context, "无法分享: ${ex.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 }

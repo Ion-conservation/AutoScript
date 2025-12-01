@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.BROADCAST_STICKY" />
     <!--  AlarmManager 权限  -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <!--  WorkManager 权限  -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 1. 声明 Shizuku 需要的权限 -->
@@ -40,13 +41,12 @@
             </intent-filter>
         </activity>
 
-        <!-- 注册无障碍服务 -->
-        <service
-            android:name=".service.AutomationBridgeService"
-            android:enabled="true"
+        <activity
+            android:name=".activity.LogListActivity"
+            android:label="日志管理"
             android:exported="false" />
 
-
+        <!-- 注册无障碍服务 -->
         <service
             android:name=".service.AutomationService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

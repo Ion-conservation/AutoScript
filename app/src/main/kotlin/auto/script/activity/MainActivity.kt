@@ -1,5 +1,6 @@
 package auto.script.activity
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import androidx.activity.viewModels
@@ -15,7 +16,6 @@ import auto.script.executor.ExecutorRepo
 import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
 import auto.script.shizuku.ShizukuRepo
-import auto.script.utils.LogSharer
 import auto.script.utils.ScriptUtils
 import auto.script.viewmodel.AutomationViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -164,8 +164,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun shareLog() {
-        LogSharer.shareLogToWeChat(this)
+//        LogSharer.shareLogToWeChat(this)
+
+        val intent = Intent(this, LogListActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Service 启动 Activity 必须加
+        startActivity(intent)
     }
+
+//    fun openLogManager() {
+//        val intent = Intent(this, LogListActivity::class.java)
+//        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // Service 启动 Activity 必须加
+//        startActivity(intent)
+//    }
 
 
 }
