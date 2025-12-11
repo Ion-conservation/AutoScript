@@ -66,8 +66,6 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
 
     // ------------------ AccessibilityService 核心方法 ------------------
     override fun performActionGlobal(): Boolean {
-        ScriptLogger.i(TAG, "接收到 来自 executor 的 performAction click")
-        // **这里是关键：直接调用父类的 final 方法**
         return super.performGlobalAction(GLOBAL_ACTION_BACK)
     }
 
@@ -119,8 +117,8 @@ class AutomationService @Inject constructor() : AccessibilityService(), A11yCapa
         return null
     }
 
-    override fun backToApp() {
-        val intent = packageManager.getLaunchIntentForPackage("auto.script")
+    override fun backToApp(packageName: String) {
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
         intent.let {
             // 确保 Activity 被带到前台
             it?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)

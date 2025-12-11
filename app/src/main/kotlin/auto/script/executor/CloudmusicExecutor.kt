@@ -9,249 +9,299 @@ import auto.script.common.centerPoint
 import auto.script.service.AutomationService
 import auto.script.shizuku.IMyShizukuService
 import auto.script.utils.ScriptLogger
-import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
 
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class ExecutorBindingModule {
-
-
-}
-
 @Singleton
-class CloudmusicExecutor @Inject constructor(
-
-) : EventTaskHandler {
-
-//    @Inject
-//    lateinit var a11yService: a11yService
-//
-//    @Inject
-//    lateinit var shizukuService: IMyShizukuService
+class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
 
     companion object {
         private const val TAG = "网易云音乐脚本"
         private const val APP_PACKAGE_NAME = "com.netease.cloudmusic"
-        private var hadClickFreeListenButton = false // 标记是否第一次，避免重复滚动等其他操作
-
         private val handler = Handler(Looper.getMainLooper())
-        private var isScrolling = false // 防止重复滚动
 
         // 使用一个简单的状态机来管理自动化流程
-        private var currentState = State.IDLE
-        private var currentActivity = ""
-
-        private var FINISH_TEXT = "已全部点亮，明天再来"
+        private var currentState = State.WAIT_TO_LAUNCH_APP
+        private var currentClassName = ""
+        private var currentPackageName = ""
 
         // 自动化流程的状态枚举
         private enum class State {
-            IDLE,                   // 空闲状态，等待应用启动
-            LAUNCHING_APP, //  正在启动 APP，通过 onAccessibilityEvent 进入下一步
-            WAIT_TO_CLICK_SKIP_BUTTON, // 等待点击 跳过 按钮
-
-            CHECK_IF_DIALOG, // 检查弹窗
-            OPEN_SIDE_BAR, // 通过打开抽屉来进入免费听
+            WAIT_TO_LAUNCH_APP, // 空闲状态，等待应用启动
+            LAUNCHING_APP, // 正在启动 APP
+            WAIT_TO_OPEN_SIDE_BAR, // 通过打开抽屉来进入免费听
             WAIT_TO_CLICK_FREE_BUTTON,   // 点击 “免费听” 按钮
-
-            LIGHT_UP_PUZZLE, // 找到 ”看视频，点亮拼图“ 按钮，并点击
-            HANDLE_AD_TITLE, // 点击广告，进入详情页
-
-            // 看15秒后点击
-            CLICK_AD_AFTER_15_SECOND,
-            CHECK_IF_CANCEL_BUTTON,
-            CHECK_IF_CANCEL_BUTTON_AND_WAIT,
-            RETURN_TO_APP,
-            CLICK_AD_IMMEDIATE
-
+            WAIT_TO_LIGHT_UP_PUZZLE, // 找到 ”看视频，点亮拼图“ 按钮，并点击
+            WAIT_TO_HANDLE_REWARD_WAY, // 点击广告，进入详情页
+            WAIT_TO_RETURN_APP,
         }
 
+        private var isLaunchingAppLock = false
+        private var isWaitToClickFreeButtonLock = false
+        private var isWaitToLightUpPuzzleLock = false
+        private var isWaitToHandleRewardWayLock = false
+        private var isWaitToReturnAppLock = false
 
     }
 
-
+    // ------------------ a11yService start ------------------
     private var a11yService: AutomationService? = null
-
-    // 提供一个绑定方法
     fun attachA11yService(service: AutomationService) {
         this.a11yService = service
     }
 
-    // 提供一个解绑方法（防止内存泄漏）
     fun detachA11yService() {
         this.a11yService = null
     }
+    // ------------------ a11yService end ------------------
 
+
+    // ------------------ shizukuService start ------------------
     var shizukuService: IMyShizukuService? = null
-
-    // 提供一个绑定方法
     fun attachShizukuService(service: IMyShizukuService) {
         ScriptLogger.i(TAG, "attachShizukuService")
         ScriptLogger.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
         this.shizukuService = service
     }
 
-    // 提供一个解绑方法（防止内存泄漏）
     fun detachShizukuService() {
         this.shizukuService = null
     }
-
-    private val isRunning = AtomicBoolean(false)
-    override fun isTaskActive(): Boolean = isRunning.get()
+    // ------------------ shizukuService end ------------------
 
     override fun handleAccessibilityEvent(event: AccessibilityEvent) {
-        ScriptLogger.d(TAG, "IN handleAccessibilityEvent")
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
 
-            ScriptLogger.d(TAG, "TYPE_WINDOW_CONTENT_CHANGED packageName: ${event.packageName}")
-            ScriptLogger.d(
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+            currentPackageName = event.packageName.toString()
+            currentClassName = event.className.toString()
+
+
+            ScriptLogger.i(
                 TAG,
-                "TYPE_WINDOW_CONTENT_CHANGED className: ${event.className.toString()}"
+                "${event.eventType}: $currentPackageName, $currentClassName, $currentState"
             )
 
-            if (
-                currentState == State.LAUNCHING_APP
-                && event.packageName.toString() == APP_PACKAGE_NAME
-            ) {
-                ScriptLogger.i(TAG, "步骤 1 结果：网易云音乐 APP 启动成功。 ${event.eventType}")
-                driveByInnerState(State.WAIT_TO_CLICK_SKIP_BUTTON)
-            }
-        }
-
-
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-
-            ScriptLogger.d(TAG, "TYPE_WINDOW_STATE_CHANGED packageName: ${event.packageName}")
-            ScriptLogger.d(
-                TAG,
-                "TYPE_WINDOW_STATE_CHANGED className: ${event.className.toString()}"
-            )
-
-            currentActivity = event.className.toString()
+            handleStateLogic(currentPackageName, currentClassName)
         }
     }
-
 
     /**
      * 核心状态处理逻辑
      */
-    private fun handleStateLogic() {
+    private fun handleStateLogic(packageName: String = "", className: String = "") {
 
         when (currentState) {
+            /**
+             *  WAIT_TO_LAUNCH_APP 等待用户点击按钮启动程序
+             *  APP 启动时将状态更改成 LAUNCHING_APP
+             * */
+            State.WAIT_TO_LAUNCH_APP -> {
+                ScriptLogger.i(TAG, "等待 APP 启动。")
+            }
 
-            State.WAIT_TO_CLICK_SKIP_BUTTON -> handleClickSkipButton()
+            /**
+             *  LAUNCHING_APP APP 正在启动
+             *  延迟 1.5 秒后将状态更改为 WAIT_TO_OPEN_SIDE_BAR
+             *  原因：应对可能出现的启动广告，如果出现广告，则清除延时执行，点击跳过广告后，重新将状态更改为 WAIT_TO_OPEN_SIDE_BAR
+             * */
+            State.LAUNCHING_APP -> {
+                ScriptLogger.i(TAG, "正在启动 APP。")
+                if (!isLaunchingAppLock) {
+                    isLaunchingAppLock = true
+                    driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1000L)
+                }
 
-            State.CHECK_IF_DIALOG -> handleCheckDialog()
-
-            State.OPEN_SIDE_BAR -> handleOpenSideBar()
-            // 3. 进入 APP 首页，查找 ”免费听“ 按钮，并点击
-            State.WAIT_TO_CLICK_FREE_BUTTON -> handleClickFreeListen()
-
-            State.LIGHT_UP_PUZZLE -> handleLightUpPuzzle()
-            // 6. 点击广告，进入详情页
-            State.HANDLE_AD_TITLE -> handleAdTitle()
-
-            // 看15秒后点击
-            State.CLICK_AD_AFTER_15_SECOND -> handleClickADAfter15Second()
-            // 检查取消按钮
-            State.CHECK_IF_CANCEL_BUTTON -> handleCheckCancelButton(2000L)
-            State.CHECK_IF_CANCEL_BUTTON_AND_WAIT -> handleCheckCancelButton(8000L)
-            // 结合 activity 返回 APP
-            State.RETURN_TO_APP -> handleReturnApp()
+                // ------------------ 可能情况：出现广告，点击跳过广告后，重新将状态更改为 WAIT_TO_OPEN_SIDE_BAR ------------------
+                if (packageName == APP_PACKAGE_NAME &&
+                    className == "android.widget.RelativeLayout"
+                ) {
+                    ScriptLogger.i(TAG, "发现 APP 启动广告")
+                    handler.removeCallbacksAndMessages(null)
+                    handleClickSkipButton {
+                        driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
+                    }
+                }
+            }
 
 
-            // 点击跳转APP停留10秒
-            State.CLICK_AD_IMMEDIATE -> handleClickADImmediateAndWait10Second()
-            else -> { /* 其它状态由内部逻辑驱动，不直接由事件触发 */
+            /**
+             *  WAIT_TO_OPEN_SIDE_BAR 等待点击侧边栏
+             *  状态变更为 WAIT_TO_CLICK_FREE_BUTTON
+             * */
+            State.WAIT_TO_OPEN_SIDE_BAR -> {
+                ScriptLogger.i(TAG, "正在打开侧边栏。")
+                handleOpenSideBar {
+                    driveByOuterState(State.WAIT_TO_CLICK_FREE_BUTTON)
+                }
+            }
+
+
+            /**
+             *  WAIT_TO_CLICK_FREE_BUTTON 等待点击免费听
+             *  状态变更为 WAIT_TO_LIGHT_UP_PUZZLE
+             * */
+            State.WAIT_TO_CLICK_FREE_BUTTON -> {
+                if (!isWaitToClickFreeButtonLock) {
+                    if (packageName == APP_PACKAGE_NAME &&
+                        className == "androidx.drawerlayout.widget.DrawerLayout"
+                    ) {
+                        isWaitToClickFreeButtonLock = true
+
+                        ScriptLogger.i(TAG, "正在点击免费听。")
+                        handleClickFreeListen {
+                            driveByOuterState(State.WAIT_TO_LIGHT_UP_PUZZLE)
+                        }
+                    }
+                }
+
+            }
+
+
+            /**
+             *  WAIT_TO_LIGHT_UP_PUZZLE 等待点击看视频按钮
+             *  状态变更为 WAIT_TO_HANDLE_REWARD_WAY
+             * */
+            State.WAIT_TO_LIGHT_UP_PUZZLE -> {
+                if (!isWaitToLightUpPuzzleLock) {
+                    if (packageName == APP_PACKAGE_NAME &&
+                        className == "com.netease.cloudmusic.activity.MainActivity"
+                    ) {
+                        isWaitToLightUpPuzzleLock = true
+
+                        ScriptLogger.i(TAG, "正在点击 看视频，点亮拼图。")
+                        handleLightUpPuzzle {
+                            driveByOuterState(State.WAIT_TO_HANDLE_REWARD_WAY)
+                        }
+                    }
+                }
+
+            }
+
+            /**
+             *  WAIT_TO_HANDLE_REWARD_WAY 等待点击看视频按钮
+             *  统一处理两种情况：看15秒后点击、点击跳转APP停留10秒
+             * */
+
+            State.WAIT_TO_HANDLE_REWARD_WAY -> {
+                if (!isWaitToHandleRewardWayLock) {
+                    if (packageName == APP_PACKAGE_NAME &&
+                        className == "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity"
+                    ) {
+
+                        isWaitToHandleRewardWayLock = true
+                        isWaitToLightUpPuzzleLock = false
+
+                        ScriptLogger.i(TAG, "当前在广告页面。")
+                        handleRewardWay {
+                            // 此处由内部驱动，因为 A11yService 无法自动触发返回
+                            driveByInnerState(State.WAIT_TO_RETURN_APP)
+                            isWaitToHandleRewardWayLock = false
+                        }
+                    }
+                }
+
+            }
+
+            /**
+             *  WAIT_TO_RETURN_APP 看完广告返回 APP
+             *  状态变更为 WAIT_TO_LIGHT_UP_PUZZLE
+             * */
+
+            State.WAIT_TO_RETURN_APP -> {
+                if (!isWaitToReturnAppLock) {
+                    isWaitToReturnAppLock = true
+                    ScriptLogger.i(TAG, "正在返回 APP。")
+                    handleReturnApp {
+                        driveByOuterState(State.WAIT_TO_LIGHT_UP_PUZZLE)
+                        isWaitToReturnAppLock = false
+                    }
+                }
+
+            }
+
+//            className == "com.netease.cloudmusic.ui.FeatureDialog" -> {
+//                ScriptLogger.i(TAG, "遇到升级的弹窗。")
+//                a11yService?.performActionGlobal()
+//            }
+//
+//            className == "i83.a" -> {
+//                ScriptLogger.i(TAG, "遇到升级完成之后的弹窗。")
+//                a11yService?.performActionGlobal()
+//            }
+
+
+            else -> {
+                // 这里可能用于处理弹窗等情况会比较合适
+                // TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.ui.FeatureDialog 升级的弹窗
+                // TYPE_WINDOW_STATE_CHANGED className: i83.a 升级完成之后的弹窗
             }
         }
     }
 
     fun startAutomation() {
-        ScriptLogger.i(TAG, "startAutomation, $shizukuService")
-        isRunning.set(true)
-
-        ScriptLogger.i(TAG, "startAutomation - Hash: ${this.hashCode()}")
+        ScriptLogger.i(TAG, "startAutomation：启动脚本。")
         shizukuService?.openApp(APP_PACKAGE_NAME)
 
         driveByOuterState(State.LAUNCHING_APP)
     }
 
     fun stopAutomation() {
-        isRunning.set(false)
+        ScriptLogger.i(TAG, "stopAutomation：停止脚本。")
+        handler.removeCallbacksAndMessages(null)
+        currentState = State.WAIT_TO_LAUNCH_APP
+        currentClassName = ""
+        isLaunchingAppLock = false
+        isWaitToClickFreeButtonLock = false
+        isWaitToLightUpPuzzleLock = false
+        isWaitToReturnAppLock = false
     }
 
-    fun handleClickSkipButton() {
+    fun handleClickSkipButton(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "步骤 2 ：查找 APP 启动广告的 ‘跳过’ 按钮并点击。",
             findAction = {
                 a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
             },
             executeAction = { skipButton ->
                 if (skipButton != null) {
-                    ScriptLogger.i(TAG, "步骤 2 结果：找到 App 启动广告 '跳过' 按钮，尝试点击。")
+                    ScriptLogger.i(
+                        TAG,
+                        "handleClickSkipButton：找到 App 启动广告 '跳过' 按钮，尝试点击。"
+                    )
                     skipButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 } else {
                     ScriptLogger.i(
                         TAG,
-                        "步骤 2 结果：找不到 App 启动广告 '跳过' 按钮，等待下一个状态。"
+                        "handleClickSkipButton：找不到 App 启动广告 '跳过' 按钮，等待下一个状态。"
                     )
                 }
-
-                driveByInnerState(State.CHECK_IF_DIALOG, 2000)
+                callback?.invoke()
             },
         )
     }
 
-    private fun handleCheckDialog() {
+    private fun handleOpenSideBar(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "步骤 3 ：检查弹窗。",
-            findAction = {
-                val dialogResourceId = "com.netease.cloudmusic:id/dsl_dialog_root"
-                a11yService?.findNodeByReourceId(dialogResourceId)
-            },
-            executeAction = { dialog ->
-                if (dialog != null) {
-                    ScriptLogger.i(TAG, "步骤 3 结果：检测到弹窗，执行 返回 动作关闭弹窗。")
-                    a11yService?.performActionGlobal()
-                } else {
-                    ScriptLogger.i(TAG, "步骤 3 结果：找不到 弹窗，执行下一步。")
-
-                }
-                driveByInnerState(State.OPEN_SIDE_BAR, 2000)
-            },
-        )
-    }
-
-    private fun handleOpenSideBar() {
-        executeWithTimeoutRetry(
-            description = "步骤 4 ：打开侧边栏菜单。",
             findAction = {
                 val sideBarResourceId = "com.netease.cloudmusic:id/menu_icon_container"
                 a11yService?.findNodeByReourceId(sideBarResourceId)
             },
             executeAction = { sideBarButton ->
                 if (sideBarButton != null) {
-                    ScriptLogger.i(TAG, "步骤 4 结果：找到 侧边栏菜单按钮，点击。")
+                    ScriptLogger.i(TAG, "handleOpenSideBar：找到侧边栏菜单按钮，尝试点击点击。")
                     sideBarButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
 
-                    driveByInnerState(State.WAIT_TO_CLICK_FREE_BUTTON, 2000)
+                    callback?.invoke()
                 } else {
-                    ScriptLogger.i(TAG, "步骤 42 结果：退出程序。")
+                    ScriptLogger.i(TAG, "handleOpenSideBar：找不到侧边栏菜单按钮，退出程序。")
                     stopAutomation()
                 }
             }
         )
     }
 
-    private fun handleClickFreeListen() {
+    private fun handleClickFreeListen(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "步骤 5 ：找到 侧边栏菜单 中的文本 ‘免费听VIP歌曲’ 并点击。",
             findAction = {
                 val DCResourceId = "DC_FlatList"
                 val container = a11yService?.findNodeByReourceId(DCResourceId)
@@ -259,15 +309,15 @@ class CloudmusicExecutor @Inject constructor(
             },
             executeAction = { listenFreeButton ->
                 if (listenFreeButton != null) {
-                    ScriptLogger.i(TAG, "步骤 5 结果：找到 ‘免费听VIP歌曲’ 按钮。")
+                    ScriptLogger.i(TAG, "handleClickFreeListen：找到免费听VIP歌曲按钮，尝试点击。")
                     val center = listenFreeButton.centerPoint()
                     center?.let { (x, y) ->
                         shizukuService?.tap(x, y)
                     }
+                    callback?.invoke()
 
-                    driveByInnerState(State.LIGHT_UP_PUZZLE, 2000)
                 } else {
-                    ScriptLogger.i(TAG, "步骤 5 结果：查找 ‘免费听VIP歌曲’ 按钮失败，退出程序。")
+                    ScriptLogger.i(TAG, "handleClickFreeListen：找不到免费听VIP歌曲按钮，退出程序。")
                     stopAutomation()
                 }
             }
@@ -275,33 +325,23 @@ class CloudmusicExecutor @Inject constructor(
     }
 
 
-    private fun handleLightUpPuzzle() {
-
-        val xml = shizukuService?.getUiXml("rest_time.xml")
-
-
-//        ScriptUtils.saveXmlToLocal(xml, "rest_time.xml")
-
-
+    private fun handleLightUpPuzzle(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "步骤 6 ：查找 ‘看视频，点亮拼图’ 按钮并点击。",
             findAction = {
                 val container =
                     a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
-
                 a11yService?.findNodeByText(container, "看视频，点亮拼图")
             },
             executeAction = { puzzleButton ->
                 if (puzzleButton != null) {
-                    ScriptLogger.i(TAG, "步骤 6 结果：找到 ‘免费听VIP歌曲’ 按钮。")
+                    ScriptLogger.i(TAG, "handleLightUpPuzzle：找到看视频，点亮拼图按钮，尝试点击。")
                     val center = puzzleButton.centerPoint()
                     center?.let { (x, y) ->
                         shizukuService?.tap(x, y)
                     }
-
-                    driveByInnerState(State.HANDLE_AD_TITLE, 2000)
+                    callback?.invoke()
                 } else {
-                    ScriptLogger.i(TAG, "步骤 6 结果：找不到 ‘看视频，点亮拼图’ 按钮，退出程序。")
+                    ScriptLogger.i(TAG, "handleLightUpPuzzle：找不到看视频，点亮拼图按钮，退出程序。")
                     stopAutomation()
                 }
             }
@@ -309,9 +349,8 @@ class CloudmusicExecutor @Inject constructor(
     }
 
 
-    private fun handleAdTitle() {
+    private fun handleRewardWay(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "查找广告弹窗的文本，判断如何处理。",
             findAction = {
                 val adTitleResourceId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
                 a11yService?.findNodeByReourceId(adTitleResourceId)
@@ -320,110 +359,109 @@ class CloudmusicExecutor @Inject constructor(
                 if (titleNode != null) {
                     val text = titleNode.text?.toString()
                     if (text == "看15秒后点击") {
-                        ScriptLogger.i(TAG, "看15秒后点击，15 秒后状态变成 State.RETURNING_TO_APP ")
-                        driveByInnerState(State.CLICK_AD_AFTER_15_SECOND)
+                        ScriptLogger.i(TAG, "handleRewardWay：看15秒后点击")
+                        handleWaitAndClick(callback)
                     } else if (text == "点击跳转APP停留10秒") {
-                        ScriptLogger.i(TAG, "点击跳转APP停留10秒")
-                        driveByInnerState(State.CLICK_AD_IMMEDIATE)
+                        ScriptLogger.i(TAG, "handleRewardWay：点击跳转APP停留10秒")
+                        handleClickAndWait(callback)
                     } else {
-                        ScriptLogger.i(TAG, "不知名文本。")
+                        ScriptLogger.i(TAG, "handleRewardWay：不知名文本，退出程序。")
                         stopAutomation()
                     }
                 } else {
-                    ScriptLogger.i(TAG, "找不到广告弹窗的文本。")
+                    ScriptLogger.i(TAG, "handleRewardWay：找不到广告弹窗的文本，退出程序。")
                     stopAutomation()
                 }
             }
         )
     }
 
-    private fun handleClickADAfter15Second() {
+    private fun handleWaitAndClick(callback: (() -> Unit)? = null) {
         handler.postDelayed({
             executeWithTimeoutRetry(
-                description = "15 秒时间到，点击广告领取奖励。",
                 findAction = {
                     a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
                 },
                 executeAction = { adButton ->
-                    adButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    driveByInnerState(State.CHECK_IF_CANCEL_BUTTON, 2000L)
+                    if (adButton != null) {
+                        ScriptLogger.i(TAG, "handleWaitAndClick：尝试点击广告。")
+                        adButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                        callback?.invoke()
+                    } else {
+                        ScriptLogger.i(TAG, "handleWaitAndClick：找不到广告，退出程序。")
+                        stopAutomation()
+                    }
                 },
             )
-        }, 13000)
+        }, 15000L)
     }
 
-    private fun handleCheckCancelButton(delay: Long) {
+    private fun handleClickAndWait(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
-            description = "点击广告详情页的 取消 按钮。",
-            findAction = {
-//                val container =
-//                    a11yService.findNodeByText(container, "取消")
-                a11yService?.findNodeByReourceId("android:id/button2")
-            },
-            executeAction = { cancelButton ->
-                if (cancelButton == null) {
-                    ScriptLogger.i(TAG, "找不到取消按钮。")
-                }
-                cancelButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                handler.postDelayed({
-                    driveByInnerState(State.RETURN_TO_APP)
-                }, delay)
-            },
-        )
-    }
-
-
-    private fun handleReturnApp() {
-        if (currentActivity == "com.netease.cloudmusic.activity.MainActivity") {
-            handler.removeCallbacksAndMessages(null)
-            driveByInnerState(State.LIGHT_UP_PUZZLE)
-        } else {
-            a11yService?.performActionGlobal()
-            handler.postDelayed({
-                handleReturnApp()
-            }, 1000)
-        }
-    }
-
-    private fun handleClickADImmediateAndWait10Second() {
-        executeWithTimeoutRetry(
-            description = "点击跳转APP停留10秒。",
             findAction = {
                 a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
             },
             executeAction = { adButton ->
-                adButton?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                driveByInnerState(State.CHECK_IF_CANCEL_BUTTON_AND_WAIT, 2000L)
+                if (adButton != null) {
+                    ScriptLogger.i(TAG, "handleClickAndWait：找到广告，尝试点击。")
+                    adButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    handler.postDelayed({
+                        callback?.invoke()
+                    }, 10000L)
+                } else {
+                    ScriptLogger.i(TAG, "handleClickAndWait：找不到广告，退出程序。")
+                    stopAutomation()
+                }
+
+
             },
         )
     }
 
 
+    private fun handleReturnApp(callback: (() -> Unit)? = null) {
+        handler.removeCallbacksAndMessages(null)
+        if (currentPackageName == "com.android.launcher") {
+            ScriptLogger.i(TAG, "回到了桌面。")
+            a11yService?.backToApp(APP_PACKAGE_NAME)
+            handler.postDelayed({
+                handleReturnApp(callback)
+            }, 2000L)
+        }
+        if (currentClassName == "com.afollestad.materialdialogs.d" || currentClassName == "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity") {
+            ScriptLogger.i(TAG, "最后一次返回")
+            a11yService?.performActionGlobal()
+            callback?.invoke()
+        } else {
+            ScriptLogger.i(TAG, "还需执行返回")
+            a11yService?.performActionGlobal()
+            handler.postDelayed({
+                handleReturnApp(callback)
+            }, 2000L)
+        }
+    }
+
+
     private fun driveByInnerState(newState: State, delay: Long = 1000L) {
-        // 状态改变前，清除所有延时任务
         handler.removeCallbacksAndMessages(null) // 清除所有延迟任务
         currentState = newState
-        ScriptLogger.d(TAG, "内部状态改变 $newState，触发事件 handleStateLogic")
+        ScriptLogger.d(TAG, "driveByInnerState：newState：$newState")
         handler.postDelayed({ handleStateLogic() }, delay)
     }
 
-    private fun driveByOuterState(newState: State) {
-        currentState = newState
-        ScriptLogger.d(TAG, "等待 TYPE_WINDOW_STATE_CHANGED 改变，触发事件")
+    private fun driveByOuterState(newState: State, delay: Long = 1000L) {
+        ScriptLogger.d(TAG, "driveByOuterState：newState：$newState")
+        handler.removeCallbacksAndMessages(null)
+        handler.postDelayed({ currentState = newState }, delay)
     }
 
     private fun executeWithTimeoutRetry(
-        description: String = "",
         timeoutMills: Long = 2000L,
         delayMills: Long = 500L,
         checkBeforeAction: () -> Unit = {},
         findAction: () -> AccessibilityNodeInfo?,
         executeAction: (node: AccessibilityNodeInfo?) -> Unit,
     ) {
-        if (description.isNotEmpty()) {
-            ScriptLogger.i(TAG, description)
-        }
-
         val startTime = System.currentTimeMillis()
 
         val retryRunnable = object : Runnable {

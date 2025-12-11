@@ -23,6 +23,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appA11yServiceName"] = "A ${applicationId}"
+        buildConfigField("String", "APP_PACKAGE_NAME", "\"com.netease.cloudmusic\"")
     }
 
 

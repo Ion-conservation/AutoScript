@@ -5,7 +5,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 interface EventTaskHandler {
-    fun isTaskActive(): Boolean
+
     fun handleAccessibilityEvent(event: AccessibilityEvent)
 }
 

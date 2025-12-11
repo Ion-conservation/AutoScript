@@ -72,8 +72,6 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 
     private val isRunning = AtomicBoolean(false)
 
-    override fun isTaskActive(): Boolean = isRunning.get()
-
 
 //    override fun onCreate() {
 //
