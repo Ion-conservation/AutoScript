@@ -38,6 +38,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         }
 
         private var isLaunchingAppLock = false
+        private var isWaitToOpenSideBar = false
         private var isWaitToClickFreeButtonLock = false
         private var isWaitToLightUpPuzzleLock = false
         private var isWaitToHandleRewardWayLock = false
@@ -109,7 +110,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
                 ScriptLogger.i(TAG, "正在启动 APP。")
                 if (!isLaunchingAppLock) {
                     isLaunchingAppLock = true
-                    driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1000L)
+                    driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
                 }
 
                 // ------------------ 可能情况：出现广告，点击跳过广告后，重新将状态更改为 WAIT_TO_OPEN_SIDE_BAR ------------------
@@ -130,10 +131,15 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
              *  状态变更为 WAIT_TO_CLICK_FREE_BUTTON
              * */
             State.WAIT_TO_OPEN_SIDE_BAR -> {
-                ScriptLogger.i(TAG, "正在打开侧边栏。")
-                handleOpenSideBar {
-                    driveByOuterState(State.WAIT_TO_CLICK_FREE_BUTTON)
+                if (!isWaitToOpenSideBar) {
+                    isWaitToOpenSideBar = true
+                    ScriptLogger.i(TAG, "正在打开侧边栏。")
+                    handleOpenSideBar {
+                        driveByOuterState(State.WAIT_TO_CLICK_FREE_BUTTON)
+                        isWaitToOpenSideBar = false
+                    }
                 }
+
             }
 
 
@@ -174,6 +180,13 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
                             driveByOuterState(State.WAIT_TO_HANDLE_REWARD_WAY)
                         }
                     }
+                }
+
+                if (packageName == APP_PACKAGE_NAME &&
+                    className == "com.afollestad.materialdialogs.d"
+                ) {
+                    ScriptLogger.i(TAG, "多了一个广告弹窗，执行一次返回。")
+                    a11yService?.performActionGlobal()
                 }
 
             }
@@ -252,6 +265,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         currentState = State.WAIT_TO_LAUNCH_APP
         currentClassName = ""
         isLaunchingAppLock = false
+        isWaitToOpenSideBar = false
         isWaitToClickFreeButtonLock = false
         isWaitToLightUpPuzzleLock = false
         isWaitToReturnAppLock = false
@@ -426,7 +440,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
             a11yService?.backToApp(APP_PACKAGE_NAME)
             handler.postDelayed({
                 handleReturnApp(callback)
-            }, 2000L)
+            }, 1500L)
         }
         if (currentClassName == "com.afollestad.materialdialogs.d" || currentClassName == "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity") {
             ScriptLogger.i(TAG, "最后一次返回")
@@ -437,7 +451,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
             a11yService?.performActionGlobal()
             handler.postDelayed({
                 handleReturnApp(callback)
-            }, 2000L)
+            }, 1500L)
         }
     }
 
@@ -449,10 +463,10 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         handler.postDelayed({ handleStateLogic() }, delay)
     }
 
-    private fun driveByOuterState(newState: State, delay: Long = 1000L) {
+    private fun driveByOuterState(newState: State) {
         ScriptLogger.d(TAG, "driveByOuterState：newState：$newState")
         handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({ currentState = newState }, delay)
+        currentState = newState
     }
 
     private fun executeWithTimeoutRetry(
