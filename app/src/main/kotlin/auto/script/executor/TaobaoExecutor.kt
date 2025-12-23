@@ -3,10 +3,10 @@ package auto.script.executor
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
+import auto.script.A11yService.A11yServiceTool
 import auto.script.common.EventTaskHandler
 import auto.script.gesture.GestureManager
-import auto.script.service.AutomationService
-import auto.script.shizuku.IMyShizukuService
+import auto.script.shizuku.IUserService
 import auto.script.utils.ScriptLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,10 +34,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     }
 
     // 使用可空的 var，或者一个接口
-    private var a11yService: AutomationService? = null
+    private var a11yService: A11yServiceTool? = null
 
     // 提供一个绑定方法
-    fun attachA11yService(service: AutomationService) {
+    fun attachA11yService(service: A11yServiceTool) {
         this.a11yService = service
     }
 
@@ -46,10 +46,10 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
         this.a11yService = null
     }
 
-    var shizukuService: IMyShizukuService? = null
+    var shizukuService: IUserService? = null
 
     // 提供一个绑定方法
-    fun attachShizukuService(service: IMyShizukuService) {
+    fun attachShizukuService(service: IUserService) {
         this.shizukuService = service
     }
 
@@ -68,7 +68,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
     private lateinit var gestureManager: GestureManager
-    private var userService: IMyShizukuService? = null
+    private var userService: IUserService? = null
 
     private val isRunning = AtomicBoolean(false)
 
@@ -165,7 +165,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
         // todo：基本配置已完成，剩下具体的工作流程了。
         ScriptLogger.i(TAG, "接收到 startAutomation 1")
 
-        shizukuService?.openApp(APP_PACKAGE_NAME)
+//        shizukuService?.openApp(APP_PACKAGE_NAME)
 
         handler.postDelayed({ handleAchievementCenterButton() }, 2000)
 

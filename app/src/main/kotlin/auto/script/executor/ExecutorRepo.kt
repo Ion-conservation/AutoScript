@@ -1,6 +1,6 @@
 package auto.script.executor
 
-import auto.script.service.AutomationService
+import auto.script.A11yService.A11yServiceTool
 import auto.script.shizuku.ShizukuManager
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,7 +12,7 @@ class ExecutorRepo @Inject constructor() {
     lateinit var shizukuManager: ShizukuManager
 
     @Inject
-    lateinit var automationService: AutomationService
+    lateinit var a11YServiceTool: A11yServiceTool
 
 //    val taobaoExecutor: TaobaoExecutor by lazy {
 //        // 1. 获取 A11yCapability 实例

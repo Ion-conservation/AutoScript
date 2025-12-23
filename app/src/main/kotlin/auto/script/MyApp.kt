@@ -3,6 +3,7 @@ package auto.script
 import android.app.Application
 import auto.script.common.ScriptCountdownManager
 import auto.script.utils.ScriptLogger
+import auto.script.utils.ScriptUtils
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -20,6 +21,7 @@ class MyApp : Application() {
         instance = this
 
         ScriptLogger.init(this)
+        ScriptUtils.init(this)
         ScriptLogger.i(TAG, "自动化服务已启动")
 
 

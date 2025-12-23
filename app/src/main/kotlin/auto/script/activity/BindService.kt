@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
-import auto.script.service.AutomationService
+import auto.script.A11yService.A11yServiceTool
 import auto.script.utils.ScriptLogger
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,7 +29,7 @@ class BindService @Inject constructor() {
 
     fun bind(context: Context) {
         ScriptLogger.d(TAG, "Service binding...")
-        val intent = Intent(context, AutomationService::class.java)
+        val intent = Intent(context, A11yServiceTool::class.java)
         context.bindService(intent, connection, Context.BIND_AUTO_CREATE)
     }
 

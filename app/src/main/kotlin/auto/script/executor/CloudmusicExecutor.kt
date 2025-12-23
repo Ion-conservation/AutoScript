@@ -4,17 +4,20 @@ import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import auto.script.A11yService.A11yServiceTool
 import auto.script.common.EventTaskHandler
 import auto.script.common.centerPoint
-import auto.script.service.AutomationService
-import auto.script.shizuku.IMyShizukuService
+import auto.script.shizuku.ShizukuTool
 import auto.script.utils.ScriptLogger
 import javax.inject.Inject
 import javax.inject.Singleton
 
 
 @Singleton
-class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
+class CloudmusicExecutor @Inject constructor(
+    private val a11yServiceTool: A11yServiceTool,
+    private val shizukuTool: ShizukuTool
+) : EventTaskHandler {
 
     companion object {
         private const val TAG = "网易云音乐脚本"
@@ -38,6 +41,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         }
 
         private var isLaunchingAppLock = false
+        private var isAdHandled = false
         private var isWaitToOpenSideBar = false
         private var isWaitToClickFreeButtonLock = false
         private var isWaitToLightUpPuzzleLock = false
@@ -46,37 +50,15 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
 
     }
 
-    // ------------------ a11yService start ------------------
-    private var a11yService: AutomationService? = null
-    fun attachA11yService(service: AutomationService) {
-        this.a11yService = service
-    }
+    override fun handleAccessibilityEvent(event: AccessibilityEvent) { // 处理事件
 
-    fun detachA11yService() {
-        this.a11yService = null
-    }
-    // ------------------ a11yService end ------------------
-
-
-    // ------------------ shizukuService start ------------------
-    var shizukuService: IMyShizukuService? = null
-    fun attachShizukuService(service: IMyShizukuService) {
-        ScriptLogger.i(TAG, "attachShizukuService")
-        ScriptLogger.i(TAG, "attachShizukuService - Hash: ${this.hashCode()}")
-        this.shizukuService = service
-    }
-
-    fun detachShizukuService() {
-        this.shizukuService = null
-    }
-    // ------------------ shizukuService end ------------------
-
-    override fun handleAccessibilityEvent(event: AccessibilityEvent) {
+//        if (checkAndHandlePopup()) {
+//            return // 弹窗已处理，本次事件不再继续执行状态机
+//        }
 
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             currentPackageName = event.packageName.toString()
             currentClassName = event.className.toString()
-
 
             ScriptLogger.i(
                 TAG,
@@ -86,6 +68,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
             handleStateLogic(currentPackageName, currentClassName)
         }
     }
+
 
     /**
      * 核心状态处理逻辑
@@ -108,20 +91,26 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
              * */
             State.LAUNCHING_APP -> {
                 ScriptLogger.i(TAG, "正在启动 APP。")
-                if (!isLaunchingAppLock) {
-                    isLaunchingAppLock = true
-                    driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
-                }
 
-                // ------------------ 可能情况：出现广告，点击跳过广告后，重新将状态更改为 WAIT_TO_OPEN_SIDE_BAR ------------------
-                if (packageName == APP_PACKAGE_NAME &&
+                if (!isAdHandled &&
+                    packageName == APP_PACKAGE_NAME &&
                     className == "android.widget.RelativeLayout"
                 ) {
+                    isAdHandled = true  // ★ 关键：只处理一次广告
                     ScriptLogger.i(TAG, "发现 APP 启动广告")
+
                     handler.removeCallbacksAndMessages(null)
+
                     handleClickSkipButton {
-                        driveByInnerState(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
+                        driveDelayed(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
                     }
+
+                    return
+                }
+
+                if (!isLaunchingAppLock) {
+                    isLaunchingAppLock = true
+                    driveDelayed(State.WAIT_TO_OPEN_SIDE_BAR, 1500L)
                 }
             }
 
@@ -186,7 +175,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
                     className == "com.afollestad.materialdialogs.d"
                 ) {
                     ScriptLogger.i(TAG, "多了一个广告弹窗，执行一次返回。")
-                    a11yService?.performActionGlobal()
+                    a11yServiceTool.performActionGlobal()
                 }
 
             }
@@ -244,19 +233,23 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
 //            }
 
 
-            else -> {
-                // 这里可能用于处理弹窗等情况会比较合适
-                // TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.ui.FeatureDialog 升级的弹窗
-                // TYPE_WINDOW_STATE_CHANGED className: i83.a 升级完成之后的弹窗
-            }
+//            else -> {
+            // 这里可能用于处理弹窗等情况会比较合适
+            // TYPE_WINDOW_STATE_CHANGED className: com.netease.cloudmusic.ui.FeatureDialog 升级的弹窗
+            // TYPE_WINDOW_STATE_CHANGED className: i83.a 升级完成之后的弹窗
+//            }
         }
     }
 
     fun startAutomation() {
         ScriptLogger.i(TAG, "startAutomation：启动脚本。")
-        shizukuService?.openApp(APP_PACKAGE_NAME)
+        try {
+            shizukuTool.openAppByPackageName(APP_PACKAGE_NAME)
 
-        driveByOuterState(State.LAUNCHING_APP)
+            driveImmediate(State.LAUNCHING_APP)
+        } catch (e: IllegalStateException) {
+            ScriptLogger.e(TAG, "启动失败: ${e.message}")
+        }
     }
 
     fun stopAutomation() {
@@ -264,7 +257,9 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         handler.removeCallbacksAndMessages(null)
         currentState = State.WAIT_TO_LAUNCH_APP
         currentClassName = ""
+
         isLaunchingAppLock = false
+        isAdHandled = false
         isWaitToOpenSideBar = false
         isWaitToClickFreeButtonLock = false
         isWaitToLightUpPuzzleLock = false
@@ -274,7 +269,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
     fun handleClickSkipButton(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
             findAction = {
-                a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
+                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
             },
             executeAction = { skipButton ->
                 if (skipButton != null) {
@@ -298,7 +293,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         executeWithTimeoutRetry(
             findAction = {
                 val sideBarResourceId = "com.netease.cloudmusic:id/menu_icon_container"
-                a11yService?.findNodeByReourceId(sideBarResourceId)
+                a11yServiceTool.findNodeByReourceId(sideBarResourceId)
             },
             executeAction = { sideBarButton ->
                 if (sideBarButton != null) {
@@ -317,16 +312,16 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
     private fun handleClickFreeListen(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
             findAction = {
-                val DCResourceId = "DC_FlatList"
-                val container = a11yService?.findNodeByReourceId(DCResourceId)
-                a11yService?.findNodeByText(container, "免费听VIP歌曲")
+                val dcResourceId = "DC_FlatList"
+                val container = a11yServiceTool.findNodeByReourceId(dcResourceId)
+                a11yServiceTool.findNodeByText(container, "免费听VIP歌曲")
             },
             executeAction = { listenFreeButton ->
                 if (listenFreeButton != null) {
                     ScriptLogger.i(TAG, "handleClickFreeListen：找到免费听VIP歌曲按钮，尝试点击。")
                     val center = listenFreeButton.centerPoint()
                     center?.let { (x, y) ->
-                        shizukuService?.tap(x, y)
+                        shizukuTool.tap(x, y)
                     }
                     callback?.invoke()
 
@@ -343,20 +338,50 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         executeWithTimeoutRetry(
             findAction = {
                 val container =
-                    a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
-                a11yService?.findNodeByText(container, "看视频，点亮拼图")
+                    a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
+
+                // ① 查找“看视频，点亮拼图”
+                val watchVideoNode = a11yServiceTool.findNodeByText(container, "看视频，点亮拼图")
+                if (watchVideoNode != null) {
+                    return@executeWithTimeoutRetry watchVideoNode
+                }
+
+                // ② 查找“已全部点亮，明天再来”
+                val finishedNode = a11yServiceTool.findNodeByText(container, "已全部点亮，明天再来")
+                if (finishedNode != null) {
+                    return@executeWithTimeoutRetry finishedNode
+                }
+
+                null
             },
-            executeAction = { puzzleButton ->
-                if (puzzleButton != null) {
-                    ScriptLogger.i(TAG, "handleLightUpPuzzle：找到看视频，点亮拼图按钮，尝试点击。")
-                    val center = puzzleButton.centerPoint()
-                    center?.let { (x, y) ->
-                        shizukuService?.tap(x, y)
-                    }
-                    callback?.invoke()
-                } else {
-                    ScriptLogger.i(TAG, "handleLightUpPuzzle：找不到看视频，点亮拼图按钮，退出程序。")
+            executeAction = { node ->
+                if (node == null) {
+                    ScriptLogger.i(TAG, "handleLightUpPuzzle：未找到拼图按钮，退出程序。")
                     stopAutomation()
+                    return@executeWithTimeoutRetry
+                }
+
+                val text = node.text?.toString() ?: ""
+
+                when (text) {
+                    "看视频，点亮拼图" -> {
+                        ScriptLogger.i(TAG, "handleLightUpPuzzle：找到“看视频，点亮拼图”，尝试点击。")
+                        val center = node.centerPoint()
+                        center?.let { (x, y) ->
+                            shizukuTool.tap(x, y)
+                        }
+                        callback?.invoke()
+                    }
+
+                    "已全部点亮，明天再来" -> {
+                        ScriptLogger.i(TAG, "handleLightUpPuzzle：今日已全部点亮，脚本结束。")
+                        stopAutomation()
+                    }
+
+                    else -> {
+                        ScriptLogger.i(TAG, "handleLightUpPuzzle：未知文本：$text，退出程序。")
+                        stopAutomation()
+                    }
                 }
             }
         )
@@ -367,20 +392,26 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         executeWithTimeoutRetry(
             findAction = {
                 val adTitleResourceId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
-                a11yService?.findNodeByReourceId(adTitleResourceId)
+                a11yServiceTool.findNodeByReourceId(adTitleResourceId)
             },
             executeAction = { titleNode ->
                 if (titleNode != null) {
                     val text = titleNode.text?.toString()
-                    if (text == "看15秒后点击") {
-                        ScriptLogger.i(TAG, "handleRewardWay：看15秒后点击")
-                        handleWaitAndClick(callback)
-                    } else if (text == "点击跳转APP停留10秒") {
-                        ScriptLogger.i(TAG, "handleRewardWay：点击跳转APP停留10秒")
-                        handleClickAndWait(callback)
-                    } else {
-                        ScriptLogger.i(TAG, "handleRewardWay：不知名文本，退出程序。")
-                        stopAutomation()
+                    when (text) {
+                        "看15秒后点击" -> {
+                            ScriptLogger.i(TAG, "handleRewardWay：看15秒后点击")
+                            handleWaitAndClick(callback)
+                        }
+
+                        "点击跳转APP停留10秒" -> {
+                            ScriptLogger.i(TAG, "handleRewardWay：点击跳转APP停留10秒")
+                            handleClickAndWait(callback)
+                        }
+
+                        else -> {
+                            ScriptLogger.i(TAG, "handleRewardWay：不知名文本，退出程序。")
+                            stopAutomation()
+                        }
                     }
                 } else {
                     ScriptLogger.i(TAG, "handleRewardWay：找不到广告弹窗的文本，退出程序。")
@@ -394,7 +425,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         handler.postDelayed({
             executeWithTimeoutRetry(
                 findAction = {
-                    a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
+                    a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
                 },
                 executeAction = { adButton ->
                     if (adButton != null) {
@@ -413,7 +444,7 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
     private fun handleClickAndWait(callback: (() -> Unit)? = null) {
         executeWithTimeoutRetry(
             findAction = {
-                a11yService?.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
+                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
             },
             executeAction = { adButton ->
                 if (adButton != null) {
@@ -437,37 +468,60 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         handler.removeCallbacksAndMessages(null)
         if (currentPackageName == "com.android.launcher") {
             ScriptLogger.i(TAG, "回到了桌面。")
-            a11yService?.backToApp(APP_PACKAGE_NAME)
+//            a11yServiceTool?.backToApp(APP_PACKAGE_NAME)
             handler.postDelayed({
                 handleReturnApp(callback)
-            }, 1500L)
+            }, 1000L)
         }
         if (currentClassName == "com.afollestad.materialdialogs.d" || currentClassName == "com.netease.cloudmusic.module.ad.motivation.commonui.AdMotivationVideoActivity") {
             ScriptLogger.i(TAG, "最后一次返回")
-            a11yService?.performActionGlobal()
+            a11yServiceTool.performActionGlobal()
             callback?.invoke()
         } else {
             ScriptLogger.i(TAG, "还需执行返回")
-            a11yService?.performActionGlobal()
+            a11yServiceTool.performActionGlobal()
             handler.postDelayed({
                 handleReturnApp(callback)
-            }, 1500L)
+            }, 1000L)
         }
+    }
+
+
+    private fun driveImmediate(newState: State) {
+        handler.removeCallbacksAndMessages(null)
+        currentState = newState
+        handleStateLogic()
+    }
+
+    private fun driveDelayed(newState: State, delay: Long) {
+        handler.removeCallbacksAndMessages(null)
+
+        handler.postDelayed({
+            currentState = newState
+            handleStateLogic()
+        }, delay)
     }
 
 
     private fun driveByInnerState(newState: State, delay: Long = 1000L) {
         handler.removeCallbacksAndMessages(null) // 清除所有延迟任务
-        currentState = newState
-        ScriptLogger.d(TAG, "driveByInnerState：newState：$newState")
-        handler.postDelayed({ handleStateLogic() }, delay)
+        handler.postDelayed({
+            ScriptLogger.d(TAG, "driveByInnerState：newState：$newState")
+            currentState = newState
+            handleStateLogic()
+        }, delay)
     }
 
-    private fun driveByOuterState(newState: State) {
+    private fun driveByOuterState(newState: State, delay: Long = 0L) {
         ScriptLogger.d(TAG, "driveByOuterState：newState：$newState")
         handler.removeCallbacksAndMessages(null)
-        currentState = newState
+
+        val runnable = Runnable { currentState = newState }
+
+        if (delay > 0) handler.postDelayed(runnable, delay)
+        else runnable.run()
     }
+
 
     private fun executeWithTimeoutRetry(
         timeoutMills: Long = 2000L,
@@ -500,6 +554,43 @@ class CloudmusicExecutor @Inject constructor() : EventTaskHandler {
         }
         handler.post(retryRunnable)
     }
+
+    private fun checkAndHandlePopup(): Boolean {
+//        val root = a11yServiceTool.getRootNode() ?: return false
+
+        // 1. 常见关闭按钮
+//        val closeTexts = listOf("关闭", "我知道了", "知道了", "取消", "不再提示", "以后再说")
+//        for (text in closeTexts) {
+//            val node = a11yServiceTool.findNodeByText(root, text)
+//            if (node != null) {
+//                ScriptLogger.i(TAG, "检测到弹窗：$text，尝试点击关闭。")
+//                node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+//                return true
+//            }
+//        }
+
+        // 2. 常见 resource-id（网易云的弹窗 id）
+        val popupIds = listOf(
+//            "com.netease.cloudmusic:id/close",
+//            "com.netease.cloudmusic:id/iv_close",
+//            "com.netease.cloudmusic:id/btn_close",
+//            "com.netease.cloudmusic.ui.FeatureDialog", // classname
+//            "i83.a", // classname
+            "com.netease.cloudmusic:id/design_bottom_sheet"
+        )
+        for (id in popupIds) {
+            val node = a11yServiceTool.findNodeByReourceId(id)
+            if (node != null) {
+                ScriptLogger.i(TAG, "检测到弹窗 id：$id，尝试点击关闭。")
+//                node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                a11yServiceTool.performActionGlobal()
+                return true
+            }
+        }
+
+        return false
+    }
+
 
 }
 

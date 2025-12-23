@@ -2,12 +2,11 @@ package auto.script.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import auto.script.A11yService.A11yServiceRepository
 import auto.script.activity.BindServiceRepo
 import auto.script.common.A11yServiceStatus
 import auto.script.common.BindServiceStatus
-import auto.script.common.ShizukuStatus
-import auto.script.service.AutomationServiceRepo
-import auto.script.shizuku.ShizukuRepo
+import auto.script.shizuku.ShizukuRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -23,13 +22,13 @@ data class ButtonUiState(
 
 @HiltViewModel
 class AutomationViewModel @Inject constructor(
-    private val shizukuRepository: ShizukuRepo,
-    private val automationServiceRepo: AutomationServiceRepo,
+    private val shizukuRepository: ShizukuRepository,
+    private val a11yServiceRepository: A11yServiceRepository,
 //    private val automationBridgeServiceRepo: AutomationBridgeServiceRepo,
     private val bindServiceRepo: BindServiceRepo
 ) : ViewModel() {
 
-    val a11yServiceUiState = automationServiceRepo.a11yServiceState.map { status ->
+    val a11yServiceUiState = a11yServiceRepository.a11yServiceState.map { status ->
         when (status) {
             A11yServiceStatus.NOT_GRANTED -> ButtonUiState("A11yService 未授权", true)
             A11yServiceStatus.READY -> ButtonUiState("A11yService 已授权", false)
@@ -40,13 +39,13 @@ class AutomationViewModel @Inject constructor(
         ButtonUiState("A11yService 检测中...", true)
     )
 
-    val shizukuUiState = shizukuRepository.shizukuStatus.map { status ->
-        when (status) {
-            ShizukuStatus.NOT_CONNECTED -> ButtonUiState("Shizuku 未连接", true)
-            ShizukuStatus.NOT_GRANTED -> ButtonUiState("Shizuku 未授权", true)
-            ShizukuStatus.GRANTED -> ButtonUiState("Shizuku 已授权", true)
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, ButtonUiState("Shizuku 检测中...", true))
+//    val shizukuUiState = shizukuRepository.shizukuStatus.map { status ->
+//        when (status) {
+//            ShizukuStatus.NOT_CONNECTED -> ButtonUiState("Shizuku 未连接", true)
+//            ShizukuStatus.NOT_GRANTED -> ButtonUiState("Shizuku 未授权", true)
+//            ShizukuStatus.GRANTED -> ButtonUiState("Shizuku 已授权", true)
+//        }
+//    }.stateIn(viewModelScope, SharingStarted.Eagerly, ButtonUiState("Shizuku 检测中...", true))
 
 
 //    val bridgeServiceUiState = automationBridgeServiceRepo.bridgeServiceState.map { status ->

@@ -28,7 +28,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NetEaseAutomation">
+        android:theme="@style/Theme.AutoScriptApp">
 
 
         <!-- ... 主入口 ... -->
@@ -48,7 +48,7 @@
 
         <!-- 注册无障碍服务 -->
         <service
-            android:name=".service.AutomationService"
+            android:name=".A11yService.A11yServiceManager"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:canPerformGestures="true"
             android:label="@string/app_a11y_service_name"

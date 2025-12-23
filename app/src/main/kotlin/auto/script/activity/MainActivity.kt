@@ -3,23 +3,22 @@ package auto.script.activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
+import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import auto.script.R
+import androidx.lifecycle.viewmodel.compose.viewModel
 import auto.script.executor.CloudmusicExecutor
-import auto.script.executor.ExecutorRepo
 import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
-import auto.script.shizuku.ShizukuRepo
+import auto.script.ui.theme.AutoScriptAppTheme
 import auto.script.utils.ScriptUtils
 import auto.script.viewmodel.AutomationViewModel
+import auto.script.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
@@ -30,14 +29,6 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var shizukuManager: ShizukuManager
 
-    @Inject
-    lateinit var shizukuRepo: ShizukuRepo
-
-    @Inject
-    lateinit var bindServiceRepo: BindServiceRepo
-
-    @Inject
-    lateinit var executorRepo: ExecutorRepo
 
     @Inject
     lateinit var taobaoExecutor: TaobaoExecutor
@@ -63,33 +54,61 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        setStyle() // 设置 APP 样式
 
-        initButton() // 初始化按钮
+        setContent {
 
-        initButtonListener() // 按钮绑定事件
+            val viewModel: MainViewModel = viewModel()
+            val themeStyle by viewModel.currentTheme.collectAsState()
 
-        initShizukuStatus()
+            // 应用动态主题
+            AutoScriptAppTheme(themeStyle = themeStyle) {
+                MyApp()
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.shizukuUiState.collect { ui ->
-                        ShizukuButton.text = ui.text
-                        ShizukuButton.isEnabled = ui.buttonEnabled
-                    }
-                }
 
-                launch {
-                    viewModel.a11yServiceUiState.collect { ui ->
-                        A11yServiceButton.text = ui.text
-                        A11yServiceButton.isEnabled = ui.buttonEnabled
-                    }
-                }
+//                    Button(
+//                        onClick = {
+//                            val next = if (themeStyle == AppThemeStyle.MINT_SODA)
+//                                AppThemeStyle.CREAM_SALT else AppThemeStyle.MINT_SODA
+//                            viewModel.switchTheme(next)
+//                        },
+//                        shape = RoundedCornerShape(8.dp)
+//                    ) {
+//                        Text("切换主题")
+//                    }
+
             }
+
         }
+//
+//
+//        setContentView(R.layout.activity_main)
+//
+//        setStyle() // 设置 APP 样式
+//
+//        initButton() // 初始化按钮
+//
+//        initButtonListener() // 按钮绑定事件
+//
+//        initShizukuStatus()
+//
+//        lifecycleScope.launch {
+//            repeatOnLifecycle(Lifecycle.State.STARTED) {
+//                launch {
+//                    viewModel.shizukuUiState.collect { ui ->
+//                        ShizukuButton.text = ui.text
+//                        ShizukuButton.isEnabled = ui.buttonEnabled
+//                    }
+//                }
+//
+//                launch {
+//                    viewModel.a11yServiceUiState.collect { ui ->
+//                        A11yServiceButton.text = ui.text
+//                        A11yServiceButton.isEnabled = ui.buttonEnabled
+//                    }
+//                }
+//            }
+//        }
     }
 
     override fun onDestroy() {
@@ -106,15 +125,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initButton() {
-        A11yServiceButton = findViewById(R.id.check_a11y)
-        ShizukuButton = findViewById(R.id.check_shizuku)
-        ShareButton = findViewById(R.id.share_log)
-
-        CloudmusicStartButton = findViewById(R.id.cloudmusic_start_service)
-        CloudmusicStopButton = findViewById(R.id.cloudmusic_stop_service)
-
-        TaobaoStartButton = findViewById(R.id.tb_start_service)
-        TaobaoStopButton = findViewById(R.id.tb_stop_service)
+//        A11yServiceButton = findViewById(R.id.check_a11y)
+//        ShizukuButton = findViewById(R.id.check_shizuku)
+//        ShareButton = findViewById(R.id.share_log)
+//
+//        CloudmusicStartButton = findViewById(R.id.cloudmusic_start_service)
+//        CloudmusicStopButton = findViewById(R.id.cloudmusic_stop_service)
+//
+//        TaobaoStartButton = findViewById(R.id.tb_start_service)
+//        TaobaoStopButton = findViewById(R.id.tb_stop_service)
     }
 
 
@@ -124,9 +143,7 @@ class MainActivity : AppCompatActivity() {
             ScriptUtils.openAccessibilitySettings(this)
         }
 
-        ShizukuButton.setOnClickListener {
-            initMyShizukuService()
-        }
+
 
         ShareButton.setOnClickListener {
             shareLog()
@@ -155,13 +172,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun initShizukuStatus() {
-        shizukuManager.setInitStatus()
-    }
-
-    fun initMyShizukuService() {
-        shizukuManager.initMyShizukuService(this)
-    }
 
     fun shareLog() {
 //        LogSharer.shareLogToWeChat(this)
@@ -179,3 +189,5 @@ class MainActivity : AppCompatActivity() {
 
 
 }
+
+

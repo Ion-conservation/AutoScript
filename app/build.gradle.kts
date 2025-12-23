@@ -15,6 +15,17 @@ android {
         version = release(36)
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("your-release-key.keystore")
+            storePassword = "yourStorePassword"
+            keyAlias = "yourKeyAlias"
+            keyPassword = "yourKeyPassword"
+        }
+
+        getByName("debug")
+    }
+
     defaultConfig {
         applicationId = "auto.script"
         minSdk = 33
@@ -29,27 +40,44 @@ android {
 
 
     buildTypes {
-        release {
+        getByName("debug") {
+            // Preview 用，不需要强制 Shizuku 重新授权
+            buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
+        }
+
+        getByName("release") {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
         }
-        // 新增 dev 构建类型
+
         create("dev") {
-            // 是否可调试
-            isDebuggable = true
-            // 在原有 applicationId 后加后缀，避免和 release 冲突
+            // 关键：基于 debug 复制一份，再覆盖差异配置
+            initWith(getByName("debug"))
+
+            // 包名后缀，区分 auto.script 与 auto.script.dev
             applicationIdSuffix = ".dev"
-            // 在版本名后加后缀，方便区分
+
+            // 版本名后缀，方便区分
             versionNameSuffix = "-dev"
+
+            // 使用 debug 签名，跟 release 分开
             signingConfig = signingConfigs.getByName("debug")
+
+            // dev 强制重新走 Shizuku 授权流程
+            buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "true")
         }
     }
+
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+
     }
     kotlinOptions {
         jvmTarget = "21"
@@ -69,11 +97,13 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.material3)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,7 +118,6 @@ dependencies {
     // UI Automator 脚本 (NetEaseMusicAutomationScript.kt) 所需的依赖
     // 必须在 androidTestImplementation scope 下
     androidTestImplementation(libs.androidx.uiautomator)
-    implementation(libs.google.material)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.fragment)
 
@@ -103,7 +132,7 @@ dependencies {
 
     implementation("com.google.dagger:hilt-android:2.52")
     kapt("com.google.dagger:hilt-compiler:2.52")
-
+    implementation(libs.hilt.navigation.compose)
 }
 
 kotlin {

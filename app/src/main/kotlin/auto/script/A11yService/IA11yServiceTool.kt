@@ -1,8 +1,10 @@
-package auto.script.service
+package auto.script.A11yService
 
+import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 
-interface A11yCapability {
+interface IA11yServiceTool {
+
     /** 暴露执行 UI 动作的方法，如点击、滑动等 */
     fun performActionGlobal(): Boolean
 
@@ -16,5 +18,5 @@ interface A11yCapability {
         targetText: String
     ): AccessibilityNodeInfo?
 
-    fun backToApp(packageName: String)
+    fun getBoundsByAccessibilityNodeInfo(node: AccessibilityNodeInfo): Rect?
 }

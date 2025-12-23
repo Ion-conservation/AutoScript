@@ -1,15 +1,15 @@
 package auto.script.shizuku;
 
 // 这个接口定义了我们的高权限服务能做什么
-interface IMyShizukuService {
+interface IUserService {
 
     /**
      * 工作流 1: 打开一个 App
      * @param packageName 要打开的应用包名
      */
-    void openApp(String packageName);
+    void openAppByPackageName(String packageName);
 
-    void returnApp();
+    void openAppByActivityName(String activityName );
 
     /**
      * 工作流 2 & 3: 获取当前界面的 XML 布局
@@ -41,16 +41,6 @@ interface IMyShizukuService {
      */
     void exit();
 
-    void getXMLAndTap(String filename, String targetResourceId, String targetClass, String targetText, String contentDesc);
 
-    Rect findNodeBounds(String xmlString, String resourceId, String className, String text, String contentDesc);
-
-    Rect getBoundsByAccessibilityNodeInfo(in AccessibilityNodeInfo node);
-
-    Rect findNodeBoundsByResourceId(String xmlString, String targetId);
-
-    Rect parseBounds(String boundsString);
-
-    void parseRemainingTimeAndSave(String xmlString);
 
 }

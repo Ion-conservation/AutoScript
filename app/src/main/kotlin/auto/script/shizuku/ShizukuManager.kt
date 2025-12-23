@@ -4,13 +4,13 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import auto.script.BuildConfig
-import auto.script.executor.CloudmusicExecutor
-import auto.script.executor.TaobaoExecutor
+import auto.script.di.entrypoints.ShizukuEntryPoint
+import auto.script.utils.ScriptUtils
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
 import rikka.shizuku.Shizuku
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,41 +25,92 @@ import javax.inject.Singleton
  * */
 
 @Singleton
-class ShizukuManager @Inject constructor() {
+class ShizukuManager @Inject constructor(@ApplicationContext val context: Context) {
 
-    @Inject
-    lateinit var shizukuRepository: ShizukuRepo
+    private val shizukuRepository by lazy {
+        EntryPointAccessors.fromApplication(
+            context,
+            ShizukuEntryPoint::class.java
+        ).shizukuRepository()
+    }
 
-    @Inject
-    lateinit var taobaoExecutor: TaobaoExecutor
-
-    @Inject
-    lateinit var cloudmusicExecutor: CloudmusicExecutor
     private val TAG = "ShizukuManager"
     private val REQUEST_CODE = 100
+    private val SHIZUKU_PACKAGE_NAME = "moe.shizuku.privileged.api"
+    private lateinit var ShizukuToolInstance: IUserService
 
 
-    // UserService 实例，暴露出去其他模块使用
-    private var myShizukuService: IMyShizukuService? = null
+    // ------------------ Shizuku 使用流程 1： 检查 Shizuku 运行状态 ------------------
+    fun isShizukuAppRunning(): Boolean {
+        val connected = Shizuku.pingBinder()
+
+        val newStatus = if (connected) {
+            shizukuRepository.shizukuStatus.value.copy(
+                running = ShizukuRunningState.RUNNING
+            )
+        } else {
+            // Shizuku 没运行 → 授权和绑定都不可能成立
+            shizukuRepository.shizukuStatus.value.copy(
+                running = ShizukuRunningState.NOT_RUNNING,
+                grant = ShizukuGrantState.NOT_GRANTED,
+                bind = ShizukuBindState.NOT_BINDED
+            )
+        }
+
+        shizukuRepository.updateShizukuStatus(newStatus)
+
+        return connected
+    }
 
 
-    private val handler = Handler(Looper.getMainLooper())
+    // ------------------ Shizuku 使用流程 2： 检查 APP 授权状态 ------------------
 
+    fun isShizukuGranted(): Boolean {
+        return Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    }
 
-    // ------------------ Shizuku 生命周期 ------------------
-
-
-    // 请求 Shizuku 权限的回调函数，授权 | 被拒绝
     private val permissionListener = Shizuku.OnRequestPermissionResultListener { req, grant ->
         if (req == REQUEST_CODE && grant == PackageManager.PERMISSION_GRANTED) {
-            shizukuRepository.updateGrantedStatus(true)
+            // 更新授权状态为 GRANTED
+            shizukuRepository.updateShizukuStatus(
+                shizukuRepository.shizukuStatus.value.copy(
+                    grant = ShizukuGrantState.GRANTED
+                )
+            )
+
+            // 授权成功后尝试绑定服务
             bindUserService()
+
         } else {
-            shizukuRepository.updateGrantedStatus(false)
-            Log.w(TAG, "用户已拒绝 Shizuku 权限。")
+            // 更新授权状态为 NOT_GRANTED
+            shizukuRepository.updateShizukuStatus(
+                shizukuRepository.shizukuStatus.value.copy(
+                    running = ShizukuRunningState.RUNNING,
+                    grant = ShizukuGrantState.NOT_GRANTED,
+                    bind = ShizukuBindState.NOT_BINDED   // 授权失败 → 绑定必然失败
+                )
+            )
+            Log.e(TAG, "用户已拒绝 Shizuku 权限。")
         }
     }
 
+
+    // ------------------ Shizuku 使用流程 3： 绑定 UserService ------------------
+
+    fun bindUserService() {
+        try {
+            Log.i(TAG, "正在绑定 UserService...")
+            Shizuku.bindUserService(userServiceArgs, serviceConnection)
+        } catch (e: Exception) {
+            Log.i(TAG, "Bind UserService 失败...")
+            shizukuRepository.updateShizukuStatus(
+                shizukuRepository.shizukuStatus.value.copy(
+                    bind = ShizukuBindState.NOT_BINDED
+                )
+            )
+        }
+
+    }
 
     private val userServiceArgs = Shizuku.UserServiceArgs(
         ComponentName(BuildConfig.APPLICATION_ID, UserService::class.java.name)
@@ -68,146 +119,54 @@ class ShizukuManager @Inject constructor() {
         .processNameSuffix("assist")
         .debuggable(BuildConfig.DEBUG)
 
-    // Shizuku 连接成功的回调 和 断开连接的回调
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Log.d(TAG, "Shizuku 服务连接成功")
-            myShizukuService = IMyShizukuService.Stub.asInterface(service)
-
-            taobaoExecutor.attachShizukuService(myShizukuService!!)
-            cloudmusicExecutor.attachShizukuService(myShizukuService!!)
-
+            Log.i(TAG, "Shizuku 服务连接成功")
+            ShizukuToolInstance = IUserService.Stub.asInterface(service)
+            shizukuRepository.attachUserServiceInstance(ShizukuToolInstance)
+            shizukuRepository.updateShizukuStatus(
+                shizukuRepository.shizukuStatus.value.copy(
+                    running = ShizukuRunningState.RUNNING,
+                    grant = ShizukuGrantState.GRANTED,
+                    bind = ShizukuBindState.BINDED
+                )
+            )
 
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            taobaoExecutor.detachShizukuService()
-            cloudmusicExecutor.detachShizukuService()
+            Log.e(TAG, "Shizuku 服务断开连接")
+            shizukuRepository.attachUserServiceInstance(null)
+            shizukuRepository.updateShizukuStatus(
+                shizukuRepository.shizukuStatus.value.copy(
+                    running = ShizukuRunningState.RUNNING,
+                    grant = ShizukuGrantState.GRANTED,
+                    bind = ShizukuBindState.NOT_BINDED
+                )
+            )
         }
     }
 
-    // ------------------ Shizuku 核心方法 ------------------
-    fun initMyShizukuService(context: Context) {
-        // start 中禁止使用任何有关 Shizuku 的 API，否则会导致脚本启动失败。
+    // ------------------ Shizuku 初始化流程 ------------------
+    fun initShizukuTool() {
 
 
-        if (isShizukuConnected()) {
-            shizukuRepository.updateConnectStatus(true)
-            if (checkShizukuPermission()) {
-                shizukuRepository.updateGrantedStatus(true)
-                bindUserService()
-            } else {
-                requestShizukuPermission()
-            }
-        } else {
-            val intent =
-                context.packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-            if (intent != null) {
-                context.startActivity(intent)
-            }
-        }
-    }
-
-    fun setInitStatus() {
-        if (!isShizukuConnected()) {
-            Shizuku.addBinderReceivedListener {
-                handleBinderReceived()
-            }
-
-            Shizuku.addBinderDeadListener {
-                handleBinderDead()
-            }
-
+        if (!isShizukuAppRunning()) {
+            ScriptUtils.openApp(SHIZUKU_PACKAGE_NAME)
             return
         }
 
-        shizukuRepository.updateConnectStatus(true)
-        if (checkShizukuPermission()) {
-            shizukuRepository.updateGrantedStatus(true)
+        if (BuildConfig.FORCE_SHIZUKU_REAUTH || !isShizukuGranted()) {
+            requestShizukuPermission()
+            return
         }
 
-
-    }
-
-    fun getShizukuService(): IMyShizukuService {
-        val binder: IBinder? = Shizuku.getBinder()
-        if (binder == null) {
-            throw IllegalStateException("binder haven't been received")
-        } else {
-            val service = IMyShizukuService.Stub.asInterface(binder)
-            Log.i(TAG, "IMyShizukuService hashCode: ${service.hashCode()}")
-            return service
-        }
-    }
-
-    fun handleBinderReceived() {
-        Log.d(TAG, "Shizuku binder received")
-        shizukuRepository.updateConnectStatus(true)
-
-        var checkPermissionResult: Boolean = checkShizukuPermission()
-
-        if (checkPermissionResult) {
-            Log.i(TAG, "Shizuku 已授权应用 ADB 权限，开始绑定 UserService 服务。")
-            shizukuRepository.updateGrantedStatus(true)
-            bindUserService()
-        } else {
-            // 绑定授权结果的回调函数
-            Log.i(TAG, "Shizuku 未授权应用 ADB 权限，请授权。")
-            Shizuku.addRequestPermissionResultListener(permissionListener)
-            Shizuku.requestPermission(REQUEST_CODE)
-        }
-    }
-
-    fun handleBinderDead() {
-        shizukuRepository.updateConnectStatus(false)
-    }
-
-    fun checkShizukuPermission(): Boolean {
-        if (Shizuku.isPreV11()) {
-            Log.e(TAG, "Shizuku 版本太旧，请升级。")
-            return false
-        }
-        return Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+        bindUserService()
     }
 
     fun requestShizukuPermission() {
+        Shizuku.addRequestPermissionResultListener(permissionListener)
         Shizuku.requestPermission(REQUEST_CODE)
     }
 
-    fun bindUserService() {
-        try {
-            Log.d(TAG, "正在绑定 UserService...")
-            Shizuku.bindUserService(userServiceArgs, serviceConnection)
-        } catch (e: Exception) {
-            Log.e(TAG, "绑定失败，3 秒后重试", e)
-            handler.postDelayed({ bindUserService() }, 3000)
-        }
-    }
-
-
-//    // 提供安全调用封装
-//    inline fun <T> withService(block: IMyShizukuService.() -> T): T? {
-//        return if (myShizukuService == null) {
-//            Log.w("ShizukuManager", "myShizukuService is NULL, block 未执行")
-//            null
-//        } else {
-//            Log.d("ShizukuManager", "myShizukuService 已就绪，执行 block")
-//            myShizukuService!!.block()
-//        }
-//    }
-
-
-    // pingBinder 表示 Shizuku APP 已经在运行，而且 Shizuku 服务已经在运行，但并不代表已经授权。
-    fun isShizukuConnected(): Boolean = Shizuku.pingBinder()
-
-    fun destroy() {
-        try {
-            Shizuku.unbindUserService(userServiceArgs, serviceConnection, true)
-            Shizuku.removeRequestPermissionResultListener(permissionListener)
-
-            Log.d(TAG, "Shizuku 已销毁")
-        } catch (e: Exception) {
-            Log.e(TAG, "销毁失败", e)
-        }
-    }
 }
