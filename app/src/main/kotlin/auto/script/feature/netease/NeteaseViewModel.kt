@@ -18,7 +18,6 @@ class NeteaseViewModel @Inject constructor(
     val shizukuStatus = controller.shizukuStatus
 
     fun startAutomation() = controller.startAutomation()
-    fun stopAutomation() = controller.stopAutomation()
     fun openA11ySettings() = controller.openAccessibilitySettings()
     fun initShizukuTool() = controller.initShizukuTool()
 

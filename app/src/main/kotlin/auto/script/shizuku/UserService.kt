@@ -50,6 +50,10 @@ class UserService : IUserService.Stub() {
 
     // --- 实现 AIDL 接口定义的方法 ---
 
+    override fun screencap(path: String) {
+        execShell("screencap -p \"$path\"")
+    }
+
     /**
      *  不知道 LAUNCHER Activity 的时候使用
      * */

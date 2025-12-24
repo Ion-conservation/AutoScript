@@ -51,4 +51,12 @@ class ShizukuTool @Inject constructor(
             shizukuService.exit()
         }
     }
+
+
+    override fun screencap(path: String) {
+        shizukuRepository.withService { shizukuService ->
+            shizukuService.screencap(path)
+        }
+    }
+
 }

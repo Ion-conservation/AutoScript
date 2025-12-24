@@ -41,6 +41,6 @@ interface IUserService {
      */
     void exit();
 
-
+    void screencap(String path);
 
 }

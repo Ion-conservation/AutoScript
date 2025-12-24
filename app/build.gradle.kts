@@ -1,11 +1,11 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    id("com.google.dagger.hilt.android")
-    id("kotlin-kapt")
-    id("dagger.hilt.android.plugin")
+    alias(libs.plugins.kotlin.kapt)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.compose.compiler)
 }
 
 
@@ -79,15 +79,18 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
 
     }
-    kotlinOptions {
-        jvmTarget = "21"
-        freeCompilerArgs += listOf("-Xjvm-default=all", "-opt-in=kotlin.RequiresOptIn")
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_21)
+            freeCompilerArgs.addAll("-Xjvm-default=all", "-opt-in=kotlin.RequiresOptIn")
+        }
     }
     buildFeatures {
         compose = true
         aidl = true
         buildConfig = true
     }
+
 
 }
 
@@ -101,6 +104,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.core)
+    implementation(libs.androidx.compose.material.extended)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
@@ -113,7 +118,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     // 1. 核心测试运行器，用于启动 Instrumentation
     // 使用 bundle 引用可以减少行数
-    implementation(libs.bundles.androidx.test.core.bundle)
+
 
     // UI Automator 脚本 (NetEaseMusicAutomationScript.kt) 所需的依赖
     // 必须在 androidTestImplementation scope 下
@@ -130,8 +135,8 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
-    implementation("com.google.dagger:hilt-android:2.52")
-    kapt("com.google.dagger:hilt-compiler:2.52")
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import auto.script.core.DumpManager.FailReason
 import auto.script.executor.CloudmusicExecutor
 import auto.script.executor.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
@@ -157,7 +158,7 @@ class MainActivity : AppCompatActivity() {
 
         CloudmusicStopButton.setOnClickListener {
 
-            cloudmusicExecutor.stopAutomation()
+            cloudmusicExecutor.stopAutomation(reason = FailReason.OTHER, message = "手动停止")
         }
 
         // Taobao 按钮逻辑

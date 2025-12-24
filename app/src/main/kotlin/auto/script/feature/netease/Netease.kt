@@ -69,8 +69,7 @@ fun Netease(navController: NavController, viewModel: NeteaseViewModel = hiltView
         shizukuStatus = shizukuStatus,
         openA11ySettings = { viewModel.openA11ySettings() },
         initShizukuTool = { viewModel.initShizukuTool() },
-        onStart = { viewModel.startAutomation() },
-        onStop = { viewModel.stopAutomation() }
+        onStart = { viewModel.startAutomation() }
     )
 }
 

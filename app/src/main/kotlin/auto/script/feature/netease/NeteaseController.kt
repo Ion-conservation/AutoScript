@@ -29,11 +29,7 @@ class NeteaseController @Inject constructor(
         }
         executor.startAutomation()
     }
-
-    fun stopAutomation() {
-        executor.stopAutomation()
-    }
-
+    
     fun openAccessibilitySettings() {
         ScriptUtils.openA11yServiceSetting()
     }

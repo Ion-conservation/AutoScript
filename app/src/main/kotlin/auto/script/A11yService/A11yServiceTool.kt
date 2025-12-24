@@ -19,6 +19,14 @@ class A11yServiceTool @Inject constructor(
 
 
     // ------------------ AccessibilityService 核心方法 ------------------
+
+    override fun getRootNode(): AccessibilityNodeInfo? {
+        return a11yServiceRepository.withService { a11yServiceInstance ->
+            a11yServiceInstance.rootInActiveWindow
+        }
+    }
+
+
     override fun performActionGlobal(): Boolean {
         return a11yServiceRepository.withService { a11yServiceInstance ->
             a11yServiceInstance.performGlobalAction(GLOBAL_ACTION_BACK)

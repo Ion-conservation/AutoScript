@@ -31,7 +31,6 @@ fun NeteaseScreen(
     openA11ySettings: () -> Unit,
     initShizukuTool: () -> Unit,
     onStart: () -> Unit,
-    onStop: () -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -151,12 +150,6 @@ fun NeteaseScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("启动")
-                    }
-                    Button(
-                        onClick = onStop,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("停止")
                     }
                 }
             }

@@ -15,4 +15,6 @@ interface IShizukuTool {
     fun back()
 
     fun exit()
+
+    fun screencap(path: String)
 }

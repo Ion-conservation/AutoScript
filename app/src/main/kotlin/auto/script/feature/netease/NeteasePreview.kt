@@ -19,7 +19,6 @@ fun PreviewNeteaseScreen() {
         ),
         openA11ySettings = {},
         initShizukuTool = {},
-        onStart = {},
-        onStop = {}
+        onStart = {}
     )
 }
