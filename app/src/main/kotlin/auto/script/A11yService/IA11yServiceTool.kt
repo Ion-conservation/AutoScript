@@ -1,6 +1,5 @@
 package auto.script.A11yService
 
-import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 
 interface IA11yServiceTool {
@@ -20,5 +19,4 @@ interface IA11yServiceTool {
         targetText: String
     ): AccessibilityNodeInfo?
 
-    fun getBoundsByAccessibilityNodeInfo(node: AccessibilityNodeInfo): Rect?
 }

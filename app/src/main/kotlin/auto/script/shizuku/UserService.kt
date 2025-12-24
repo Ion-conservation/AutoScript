@@ -4,6 +4,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import java.io.BufferedReader
+import java.text.SimpleDateFormat
+import java.util.Date
 import kotlin.system.exitProcess
 
 
@@ -69,17 +71,30 @@ class UserService : IUserService.Stub() {
         execShell("am start -n auto.script/.MainActivity")
     }
 
-    override fun getUiXml(filename: String): String {
-        val dumpFile = "/data/local/tmp/u$filename"
-        // 1. 先 dump 布局
+    override fun getUiXml(filename: String?): String {
+        // 1. 处理文件名逻辑：如果 filename 为 null 或为空字符串，则生成时间戳
+        val finalFileName = if (filename.isNullOrBlank()) {
+            val formatter = SimpleDateFormat("yyyy-MM-dd___HH-mm-ss")
+            formatter.format(Date())
+        } else {
+            filename
+        }
+
+        val dumpFile = "/data/local/tmp/u$finalFileName.xml" // 建议加上 .xml 后缀
+
+        // 2. 执行 dump 布局
+        // 提示：uiautomator dump 如果不指定路径，默认也会存放在 /sdcard/view.xml
         execShell("uiautomator dump $dumpFile")
-        // 2. 再读取 dump 出来的文件内容并返回
+
+        // 3. 读取内容
         val (xml, err) = execShell("cat $dumpFile")
 
-        if (err.isNotEmpty()) {
-            return "Error: $err"
+        return if (err.isNotEmpty()) {
+            "Error: $err"
         } else {
-            return xml
+            // 建议：读取完后删除临时文件，防止占用手机空间
+            // execShell("rm $dumpFile")
+            xml
         }
     }
 

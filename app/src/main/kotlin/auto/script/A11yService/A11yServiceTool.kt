@@ -1,11 +1,7 @@
 package auto.script.A11yService
 
 import android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK
-import android.graphics.Rect
-import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
-import auto.script.utils.ScriptLogger
-import auto.script.utils.ScriptUtils.parseBounds
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -86,18 +82,6 @@ class A11yServiceTool @Inject constructor(
         return null
     }
 
-    override fun getBoundsByAccessibilityNodeInfo(node: AccessibilityNodeInfo): Rect? {
-        val rect = Rect()
-        node.getBoundsInScreen(rect)
-        val boundsString = "[${rect.left},${rect.top}][${rect.right},${rect.bottom}]"
-        Log.i(TAG, boundsString)
-        val bounds = parseBounds(boundsString)
-        if (bounds != null) {
-            ScriptLogger.e(TAG, "Found node at $bounds")
-            return bounds
-        }
-        return null
-    }
 
 
 }

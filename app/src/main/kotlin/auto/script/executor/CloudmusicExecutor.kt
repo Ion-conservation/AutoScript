@@ -10,6 +10,7 @@ import auto.script.common.centerPoint
 import auto.script.core.DumpManager.DumpInfo
 import auto.script.core.DumpManager.DumpManager
 import auto.script.core.DumpManager.FailReason
+import auto.script.nodetool.NodeTool
 import auto.script.shizuku.ShizukuTool
 import auto.script.state.NeteaseState
 import auto.script.utils.ScriptLogger
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 class CloudmusicExecutor @Inject constructor(
     private val a11yServiceTool: A11yServiceTool,
     private val shizukuTool: ShizukuTool,
+    private val nodeTool: NodeTool
 ) : EventTaskHandler {
 
     companion object {
@@ -165,18 +167,24 @@ class CloudmusicExecutor @Inject constructor(
 // ---------------- 以下业务逻辑保持不变，只把 stopAutomation 改成带 reason ----------------
 
     fun handleClickSkipButton(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
-            },
-            executeAction = { skipButton ->
-                if (skipButton != null) {
-                    ScriptLogger.i(TAG, "找到启动广告跳过按钮")
-                    skipButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                }
-                callback?.invoke()
+
+        nodeTool.findByResourceId("com.netease.cloudmusic:id/skipBtn")
+            .retry(2000)
+            .then { node ->
+                node?.click()
             }
-        )
+//        executeWithTimeoutRetry(
+//            findAction = {
+//                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
+//            },
+//            executeAction = { skipButton ->
+//                if (skipButton != null) {
+//                    ScriptLogger.i(TAG, "找到启动广告跳过按钮")
+//                    skipButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+//                }
+//                callback?.invoke()
+//            }
+//        )
     }
 
     private fun handleOpenSideBar(callback: (() -> Unit)? = null) {
@@ -325,7 +333,7 @@ class CloudmusicExecutor @Inject constructor(
             ScriptLogger.i(TAG, "找到 看视频，点亮拼图")
             currentState = NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE
             handleLightUpPuzzle {
-                driveByOuterState(NeteaseState.WAIT_TO_HANDLE_REWARD_WAY)
+                handleStateChange(NeteaseState.WAIT_TO_HANDLE_REWARD_WAY)
             }
             return
         }
@@ -333,7 +341,7 @@ class CloudmusicExecutor @Inject constructor(
         val finishedNode = a11yServiceTool.findNodeByText(container, "已全部点亮，明天再来")
         if (finishedNode != null) {
             ScriptLogger.i(TAG, "找到 已全部点亮，明天再来")
-            driveImmediate(NeteaseState.WAIT_TO_LAUNCH_APP)
+            handleStateChange(NeteaseState.WAIT_TO_LAUNCH_APP)
             stopAutomation(reason = FailReason.OTHER, "执行完成。")
             return
         }

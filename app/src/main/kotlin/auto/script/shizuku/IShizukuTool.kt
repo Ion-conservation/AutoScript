@@ -1,5 +1,8 @@
 package auto.script.shizuku
 
+import NodeResult
+
+
 interface IShizukuTool {
 
     fun openAppByPackageName(packageName: String)
@@ -17,4 +20,7 @@ interface IShizukuTool {
     fun exit()
 
     fun screencap(path: String)
+
+    fun findNodeById(resId: String): NodeResult.ShizukuNode?
+    fun findNodeByText(text: String): NodeResult.ShizukuNode?
 }

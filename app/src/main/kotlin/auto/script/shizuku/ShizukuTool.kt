@@ -1,5 +1,7 @@
 package auto.script.shizuku
 
+import NodeResult
+import auto.script.utils.XmlParser
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,6 +58,17 @@ class ShizukuTool @Inject constructor(
     override fun screencap(path: String) {
         shizukuRepository.withService { shizukuService ->
             shizukuService.screencap(path)
+        }
+    }
+
+    override fun findNodeById(resId: String): NodeResult.ShizukuNode?  {
+        return null
+    }
+
+    override fun findNodeByText(text: String): NodeResult.ShizukuNode? {
+        return shizukuRepository.withService { shizukuService ->
+            val xml = shizukuService.getUiXml(null) ?: return@withService null
+            XmlParser.findNodeByText(xml,text)
         }
     }
 
