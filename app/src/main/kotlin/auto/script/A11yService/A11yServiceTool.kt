@@ -2,6 +2,7 @@ package auto.script.A11yService
 
 import android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK
 import android.view.accessibility.AccessibilityNodeInfo
+import auto.script.nodetool.NodeContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,6 +14,9 @@ class A11yServiceTool @Inject constructor(
 
     private val TAG = "A11YServiceServiceTool"
 
+    init {
+        NodeContext.a11yServiceTool = this
+    }
 
     // ------------------ AccessibilityService 核心方法 ------------------
 
@@ -81,7 +85,6 @@ class A11yServiceTool @Inject constructor(
         }
         return null
     }
-
 
 
 }

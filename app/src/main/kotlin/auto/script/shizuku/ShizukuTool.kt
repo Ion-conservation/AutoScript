@@ -1,6 +1,8 @@
 package auto.script.shizuku
 
 import NodeResult
+import auto.script.nodetool.NodeContext
+import auto.script.utils.ScriptLogger
 import auto.script.utils.XmlParser
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,6 +13,10 @@ class ShizukuTool @Inject constructor(
 ) : IShizukuTool {
 
     private val TAG = "ShizukuTool"
+
+    init {
+        NodeContext.shizukuServiceTool = this
+    }
 
     override fun openAppByPackageName(packageName: String) {
         shizukuRepository.withService { shizukuService ->
@@ -32,6 +38,7 @@ class ShizukuTool @Inject constructor(
 
     override fun tap(x: Int, y: Int) {
         shizukuRepository.withService { shizukuService ->
+            ScriptLogger.i("ShizukuTool", "tap: $x, $y")
             shizukuService.tap(x, y)
         }
     }
@@ -61,15 +68,25 @@ class ShizukuTool @Inject constructor(
         }
     }
 
-    override fun findNodeById(resId: String): NodeResult.ShizukuNode?  {
-        return null
+    override fun findNodeById(resId: String): NodeResult.ShizukuNode? {
+        return shizukuRepository.withService { shizukuService ->
+            val xml = shizukuService.getUiXml(null) ?: return@withService null
+            XmlParser.findNodeById(xml, resId)
+        }
     }
 
     override fun findNodeByText(text: String): NodeResult.ShizukuNode? {
         return shizukuRepository.withService { shizukuService ->
             val xml = shizukuService.getUiXml(null) ?: return@withService null
-            XmlParser.findNodeByText(xml,text)
+            XmlParser.findNodeByText(xml, text)
         }
     }
+
+    override fun getCurrentPackageName(): String? {
+        return shizukuRepository.withService { shizukuService ->
+            shizukuService.getCurrentPackageName()
+        }
+    }
+
 
 }

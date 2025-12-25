@@ -23,4 +23,7 @@ interface IShizukuTool {
 
     fun findNodeById(resId: String): NodeResult.ShizukuNode?
     fun findNodeByText(text: String): NodeResult.ShizukuNode?
+
+    fun getCurrentPackageName(): String?
+
 }

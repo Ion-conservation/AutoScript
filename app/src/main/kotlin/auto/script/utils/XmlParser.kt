@@ -7,7 +7,8 @@ object XmlParser {
 
     data class XmlNode(
         val text: String?,
-        val bounds: String?
+        val bounds: String?,
+        val id: String?
     )
 
     /**
@@ -21,25 +22,41 @@ object XmlParser {
         } ?: return null
 
         val (x, y) = parseBounds(match.bounds ?: return null)
-        return NodeResult.ShizukuNode(x, y)
+
+        return NodeResult.ShizukuNode(x, y, match.text)
     }
+
+    fun findNodeById(xml: String, resId: String): NodeResult.ShizukuNode? {
+        val nodes = parseNodes(xml)
+
+        val match = nodes.firstOrNull { node ->
+            node.id == resId
+        } ?: return null
+
+        val (x, y) = parseBounds(match.bounds ?: return null)
+
+        return NodeResult.ShizukuNode(x, y, match.text)
+    }
+
 
     /**
      * 解析所有节点（只提取 text 和 bounds）
      */
     private fun parseNodes(xml: String): List<XmlNode> {
         val regex = Regex(
-            """<node[^>]*?text="(.*?)"[^>]*?bounds="(\[.*?])"""",
+            """<node[^>]*?text="(.*?)"[^>]*?resource-id="(.*?)"[^>]*?bounds="(\[.*?])""",
             RegexOption.DOT_MATCHES_ALL
         )
 
         return regex.findAll(xml).map { match ->
             XmlNode(
                 text = match.groupValues[1].ifEmpty { null },
-                bounds = match.groupValues[2]
+                id = match.groupValues[2].ifEmpty { null },
+                bounds = match.groupValues[3]
             )
         }.toList()
     }
+
 
     /**
      * 将 bounds="[100,200][300,400]" 转换为中心点坐标

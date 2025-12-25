@@ -1,8 +1,12 @@
 package auto.script.shizuku
 
+import android.app.IActivityManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import auto.script.utils.ScriptLogger
+import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.SystemServiceHelper
 import java.io.BufferedReader
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -95,6 +99,28 @@ class UserService : IUserService.Stub() {
             // 建议：读取完后删除临时文件，防止占用手机空间
             // execShell("rm $dumpFile")
             xml
+        }
+    }
+
+    // 需要先在项目中导入相关的 AIDL 定义，或者通过反射调用
+    override fun getCurrentPackageName(): String? {
+        return try {
+            // 使用 Shizuku 提供的 Binder 包装器
+            val am = IActivityManager.Stub.asInterface(
+                ShizukuBinderWrapper(SystemServiceHelper.getSystemService("activity"))
+            )
+
+            // 获取当前正在运行的 1 个最近任务
+            val tasks = am.getTasks(1, 0)
+            if (tasks.isNotEmpty()) {
+                // 直接获取包名，没有任何 2025 的干扰
+                tasks[0].topActivity?.packageName
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            ScriptLogger.e("Shizuku", "通过 API 获取包名失败: ${e.message}")
+            null
         }
     }
 

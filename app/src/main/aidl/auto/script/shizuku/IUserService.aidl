@@ -43,4 +43,6 @@ interface IUserService {
 
     void screencap(String path);
 
+    String getCurrentPackageName();
+
 }

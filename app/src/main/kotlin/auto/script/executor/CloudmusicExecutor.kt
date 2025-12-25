@@ -3,10 +3,8 @@ package auto.script.executor
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityNodeInfo
 import auto.script.A11yService.A11yServiceTool
 import auto.script.common.EventTaskHandler
-import auto.script.common.centerPoint
 import auto.script.core.DumpManager.DumpInfo
 import auto.script.core.DumpManager.DumpManager
 import auto.script.core.DumpManager.FailReason
@@ -32,359 +30,280 @@ class CloudmusicExecutor @Inject constructor(
     private val handler = Handler(Looper.getMainLooper())
     private var currentState: NeteaseState = NeteaseState.WAIT_TO_LAUNCH_APP
 
-    override fun handleAccessibilityEvent(event: AccessibilityEvent) {
+    // 关键：防止上一轮逻辑没跑完，下一轮心跳又进来了
+    private var isBusy = false
 
-        handleDialog()
+    // -------------------------
+    // 心跳机制
+    // -------------------------
+    private var currentInterval = 1000L
+    private var heartbeatPaused = false
 
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
-            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
-        ) {
-
-            handleStateLogic()
-        }
+    object AppStatusMonitor {
+        var currentPackage: String? = null
     }
 
-    fun handleDialog() {
-        val popupRules = listOf(
-            "com.netease.cloudmusic:id/design_bottom_sheet", // 这个是主页的弹窗
-            "com.oplus.securitypermission:id/rootView", // 这个是提示想要打开小程序
-            "com.netease.cloudmusic:id/positiveBtn", // 继续观看
-            "com.coloros.sceneservice:id/action_bar_root", // 开启物流提醒
-        )
+    private val heartbeatTask = object : Runnable {
+        override fun run() {
+            if (heartbeatPaused) return // 如果被显式暂停，停止循环
 
-        for (id in popupRules) {
-            val nodes = a11yServiceTool.findNodeByReourceId(id)
-            if (nodes != null) {
-                a11yServiceTool.performActionGlobal()
-                return
+            // 2. 正常逻辑执行
+            if (!isBusy) {
+                val currentPkg = AppStatusMonitor.currentPackage
+
+                if (currentPkg == APP_PACKAGE_NAME) {
+                    handleStateLogic()
+                } else if (currentPkg != null) {
+                    // 只有明确拿到了非目标包名，才执行返回逻辑
+                    handleReturnAppLogic()
+                }
             }
+
+            // 3. 动态调整频率
+            val dynamicInterval = when (currentState) {
+                NeteaseState.WAIT_TO_HANDLE_REWARD_WAY -> 5000L // 广告页慢一点
+                NeteaseState.LAUNCHING_APP -> 500L           // 启动页快一点
+                else -> 1000L
+            }
+
+            handler.postDelayed(this, dynamicInterval)
         }
-
     }
-
 
     /**
-     * 核心状态处理逻辑
+     * 启动自动化（入口）
      */
-    private fun handleStateLogic() {
-
-        when (currentState) {
-
-            NeteaseState.WAIT_TO_LAUNCH_APP -> {
-                ScriptLogger.i(TAG, "等待 APP 启动。")
-            }
-
-            NeteaseState.LAUNCHING_APP -> {
-                handleClickSkipButton {
-                    handleStateChange(NeteaseState.WAIT_TO_OPEN_SIDE_BAR)
-                }
-            }
-
-            NeteaseState.WAIT_TO_OPEN_SIDE_BAR -> {
-                ScriptLogger.i(TAG, "正在打开侧边栏。")
-                handleOpenSideBar {
-                    handleStateChange(NeteaseState.WAIT_TO_CLICK_FREE_BUTTON)
-                }
-            }
-
-            NeteaseState.WAIT_TO_CLICK_FREE_BUTTON -> {
-                ScriptLogger.i(TAG, "正在点击免费听。")
-                handleClickFreeListen {
-                    handleStateChange(NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE)
-                }
-            }
-
-
-            NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE -> {
-                ScriptLogger.i(TAG, "正在点击 看视频，点亮拼图。")
-                handleLightUpPuzzle {
-                    handleStateChange(NeteaseState.WAIT_TO_HANDLE_REWARD_WAY)
-                }
-            }
-
-            NeteaseState.WAIT_TO_HANDLE_REWARD_WAY -> {
-                ScriptLogger.i(TAG, "当前在广告页面。")
-                handleRewardWay {
-                    handleStateChange(NeteaseState.WAIT_TO_RETURN_APP)
-
-                }
-            }
-
-            NeteaseState.WAIT_TO_RETURN_APP -> {
-                ScriptLogger.i(TAG, "正在返回 APP。")
-                handleReturnApp()
-            }
-
-            else -> {}
-        }
-    }
-
     fun startAutomation() {
         ScriptLogger.i(TAG, "startAutomation：启动脚本。")
         try {
             shizukuTool.openAppByPackageName(APP_PACKAGE_NAME)
-            handleStateChange(NeteaseState.LAUNCHING_APP)
+
+            // 1. 初始化状态
+            currentState = NeteaseState.LAUNCHING_APP
+            isBusy = false
+
+            // 2. 开启心跳（先移除旧的，防止双倍心跳）
+            handler.removeCallbacks(heartbeatTask)
+            handler.postDelayed(heartbeatTask, 1000L)
+
         } catch (e: IllegalStateException) {
             stopAutomation(FailReason.LAUNCHING_APP_FAILED, "启动失败: ${e.message}")
         }
     }
 
     /**
-     * ★★★ 统一失败出口 + DumpManager ★★★
+     * 停止自动化
      */
     fun stopAutomation(reason: FailReason, message: String? = null) {
         ScriptLogger.i(TAG, "stopAutomation：停止脚本。原因：$reason, $message")
 
-        handler.removeCallbacksAndMessages(null)
+        // 停止心跳
+        handler.removeCallbacks(heartbeatTask)
+        isBusy = false
 
-        // dump UI + screenshot
+        // Dump 逻辑（保持你原有的）
         val root = a11yServiceTool.getRootNode()
-        val dumpInfo = DumpInfo(
-            timestamp = System.currentTimeMillis(),
-            state = currentState,
-            reason = reason,
-            message = message
-        )
+        val dumpInfo = DumpInfo(System.currentTimeMillis(), currentState, reason, message)
+        DumpManager.dump(dumpInfo, root, { path ->
+            try {
+                shizukuTool.screencap(path); true
+            } catch (e: Exception) {
+                false
+            }
+        }, true)
 
-        DumpManager.dump(
-            dumpInfo = dumpInfo,
-            rootNode = root,
-            takeScreenshot = { path ->
-                try {
-                    shizukuTool.screencap(path)
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-            },
-            sendEmail = true
-        )
-
-        // reset
         currentState = NeteaseState.WAIT_TO_LAUNCH_APP
     }
 
-// ---------------- 以下业务逻辑保持不变，只把 stopAutomation 改成带 reason ----------------
+    // -------------------------
+    // 核心状态机（由心跳驱动）
+    // -------------------------
+    private fun handleStateLogic() {
 
-    fun handleClickSkipButton(callback: (() -> Unit)? = null) {
+        // 每次执行前先处理弹窗
+        handleDialog()
 
-        nodeTool.findByResourceId("com.netease.cloudmusic:id/skipBtn")
-            .retry(2000)
-            .then { node ->
-                node?.click()
-            }
-//        executeWithTimeoutRetry(
-//            findAction = {
-//                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/skipBtn")
-//            },
-//            executeAction = { skipButton ->
-//                if (skipButton != null) {
-//                    ScriptLogger.i(TAG, "找到启动广告跳过按钮")
-//                    skipButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-//                }
-//                callback?.invoke()
-//            }
-//        )
-    }
-
-    private fun handleOpenSideBar(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/menu_icon_container")
-            },
-            executeAction = { sideBarButton ->
-                if (sideBarButton != null) {
-                    sideBarButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    callback?.invoke()
-                } else {
-                    stopAutomation(FailReason.NODE_NOT_FOUND, "找不到侧边栏按钮")
+        when (currentState) {
+            NeteaseState.LAUNCHING_APP -> {
+                checkAndClick("com.netease.cloudmusic:id/skipBtn", "跳过广告") {
+                    currentState = NeteaseState.WAIT_TO_OPEN_SIDE_BAR
                 }
             }
-        )
-    }
 
-    private fun handleClickFreeListen(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                val container = a11yServiceTool.findNodeByReourceId("DC_FlatList")
-                a11yServiceTool.findNodeByText(container, "免费听VIP歌曲")
-            },
-            executeAction = { listenFreeButton ->
-                if (listenFreeButton != null) {
-                    val center = listenFreeButton.centerPoint()
-                    center?.let { (x, y) -> shizukuTool.tap(x, y) }
-                    callback?.invoke()
-                } else {
-                    stopAutomation(FailReason.NODE_NOT_FOUND, "找不到免费听按钮")
+            NeteaseState.WAIT_TO_OPEN_SIDE_BAR -> {
+                checkAndClick("com.netease.cloudmusic:id/menu_icon_container", "侧边栏") {
+                    currentState = NeteaseState.WAIT_TO_CLICK_FREE_BUTTON
                 }
             }
-        )
+
+            NeteaseState.WAIT_TO_CLICK_FREE_BUTTON -> {
+                // 用文本查找
+                checkAndClickByText("免费听VIP歌曲", "免费听按钮") {
+                    currentState = NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE
+                }
+            }
+
+            NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE -> {
+                handlePuzzleState()
+            }
+
+            NeteaseState.WAIT_TO_HANDLE_REWARD_WAY -> {
+                handleAdRewardLogic()
+            }
+
+            else -> { /* 其他状态或等待中 */
+            }
+        }
     }
 
-    private fun handleLightUpPuzzle(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                val container =
-                    a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
+    // -------------------------
+    // 业务逻辑封装（非阻塞式）
+    // -------------------------
 
-                val watchVideoNode = a11yServiceTool.findNodeByText(container, "看视频，点亮拼图")
-                if (watchVideoNode != null) return@executeWithTimeoutRetry watchVideoNode
+    /**
+     * 封装 ID 查找点击，不使用内部 retry，依靠心跳自然重试
+     */
+    private fun checkAndClick(resId: String, label: String, onSuccess: () -> Unit) {
+        isBusy = true
+        nodeTool.findByResourceId(resId).then { node ->
+            if (node != null) {
+                ScriptLogger.i(TAG, "找到 $label，执行点击")
+                node.click()
+                onSuccess()
+            }
+            isBusy = false // 无论找没找到，干完活就把锁释放
+        }.start()
+    }
 
-                val finishedNode = a11yServiceTool.findNodeByText(container, "已全部点亮，明天再来")
-                if (finishedNode != null) return@executeWithTimeoutRetry finishedNode
+    private fun checkAndClickByText(text: String, label: String, onSuccess: () -> Unit) {
+        isBusy = true
+        nodeTool.findByText(text).then { node ->
+            if (node != null) {
+                ScriptLogger.i(TAG, "找到 $label，执行点击")
+                node.click()
+                onSuccess()
+            }
+            isBusy = false
+        }.start()
+    }
 
-                null
-            },
-            executeAction = { node ->
-                if (node == null) {
-                    stopAutomation(FailReason.NODE_NOT_FOUND, "未找到拼图按钮")
-                    return@executeWithTimeoutRetry
-                }
-
-                when (node.text?.toString()) {
-                    "看视频，点亮拼图" -> {
-                        val center = node.centerPoint()
-                        center?.let { (x, y) -> shizukuTool.tap(x, y) }
-                        callback?.invoke()
+    /**
+     * 处理拼图页面的特殊逻辑
+     */
+    private fun handlePuzzleState() {
+        isBusy = true
+        nodeTool.findByText("看视频，点亮拼图").then { node ->
+            if (node != null) {
+                node.click()
+                currentState = NeteaseState.WAIT_TO_HANDLE_REWARD_WAY
+                isBusy = false
+            } else {
+                // 没找到点亮，找找是不是完成了
+                nodeTool.findByText("已全部点亮，明天再来").then { finishedNode ->
+                    if (finishedNode != null) {
+                        stopAutomation(FailReason.OTHER, "拼图任务已全部完成")
                     }
+                    isBusy = false
+                }.start()
+            }
+        }.start()
+    }
 
-                    "已全部点亮，明天再来" -> {
-                        stopAutomation(FailReason.OTHER, "今日已全部点亮")
-                    }
+    /**
+     * 广告奖励页面的复杂逻辑处理
+     */
+    private fun handleAdRewardLogic() {
+        isBusy = true
+        val resId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
+        nodeTool.findByResourceId(resId).then { node ->
+            val adText = node?.text ?: ""
+            ScriptLogger.i(TAG, "检测到广告类型: $adText")
 
-                    else -> {
-                        stopAutomation(FailReason.UNKNOWN_UI, "未知拼图文本")
-                    }
+            when {
+                adText.contains("看15秒") -> {
+                    // 这里由于需要等待 15 秒，我们暂时不释放 isBusy，
+                    // 相当于“掐断”心跳，直到倒计时结束
+                    handler.postDelayed({
+                        clickAdButton()
+                    }, 16000L)
+                }
+
+                adText.contains("跳转APP") -> {
+                    node?.click()
+                    handler.postDelayed({
+                        currentState = NeteaseState.WAIT_TO_RETURN_APP
+                        isBusy = false
+                    }, 11000L)
+                }
+
+                else -> {
+                    isBusy = false // 没识别到，让心跳下一秒再试
                 }
             }
-        )
+        }.start()
     }
 
-    private fun handleRewardWay(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title")
-            },
-            executeAction = { titleNode ->
-                if (titleNode != null) {
-                    when (titleNode.text?.toString()) {
-                        "看15秒后点击" -> handleWaitAndClick(callback)
-                        "点击跳转APP停留10秒" -> handleClickAndWait(callback)
-                        else -> stopAutomation(FailReason.UNKNOWN_UI, "未知广告文本")
-                    }
-                } else {
-                    stopAutomation(FailReason.NODE_NOT_FOUND, "找不到广告标题")
-                }
+    private fun clickAdButton() {
+        val btnId = "com.netease.cloudmusic:id/adConsumeClick"
+        nodeTool.findByResourceId(btnId).then { node ->
+            node?.click()
+            currentState = NeteaseState.WAIT_TO_RETURN_APP
+            isBusy = false
+        }.start()
+    }
+
+    // -------------------------
+    // 原有工具方法保持
+    // -------------------------
+
+    override fun handleAccessibilityEvent(event: AccessibilityEvent) {
+        // 仅处理全局弹窗，不驱动状态机
+        val pkg = event.packageName?.toString()
+        if (!pkg.isNullOrBlank()) {
+            AppStatusMonitor.currentPackage = pkg
+        }
+
+        handleDialog()
+    }
+
+    fun handleDialog() {
+        val popupRules = listOf(
+            "com.netease.cloudmusic:id/design_bottom_sheet",
+            "com.oplus.securitypermission:id/rootView",
+            "com.netease.cloudmusic:id/positiveBtn"
+        )
+        for (id in popupRules) {
+            val nodes = a11yServiceTool.findNodeByReourceId(id)
+            if (nodes != null) {
+                ScriptLogger.i(TAG, "检测到干扰弹窗: $id，尝试关闭")
+                a11yServiceTool.performActionGlobal() // 或其他关闭逻辑
+                return
             }
-        )
+        }
     }
 
-    private fun handleWaitAndClick(callback: (() -> Unit)? = null) {
-        handler.postDelayed({
-            executeWithTimeoutRetry(
-                findAction = {
-                    a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
-                },
-                executeAction = { adButton ->
-                    if (adButton != null) {
-                        adButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                        callback?.invoke()
-                    } else {
-                        stopAutomation(FailReason.NODE_NOT_FOUND, "广告点击按钮不存在")
-                    }
-                }
-            )
-        }, 15000L)
-    }
-
-    private fun handleClickAndWait(callback: (() -> Unit)? = null) {
-        executeWithTimeoutRetry(
-            findAction = {
-                a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/adConsumeClick")
-            },
-            executeAction = { adButton ->
-                if (adButton != null) {
-                    adButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    handler.postDelayed({ callback?.invoke() }, 10000L)
-                } else {
-                    stopAutomation(FailReason.NODE_NOT_FOUND, "广告跳转按钮不存在")
-                }
-            }
-        )
-    }
-
-    private fun handleReturnApp(callback: (() -> Unit)? = null) {
+    private fun handleReturnAppLogic() {
+        // 停止所有待执行的任务，防止逻辑重叠
         handler.removeCallbacksAndMessages(null)
 
-        // ------------------ 处理美团按钮导致全局返回失效问题 ------------------
+        val currentPkg = shizukuTool.getCurrentPackageName()
 
-        val meituanButton = a11yServiceTool.findNodeByReourceId("com.sankuai.meituan:id/btn_left")
-        if (meituanButton != null) {
-            meituanButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            handler.postDelayed({ handleReturnApp(callback) }, 1000L)
-        }
-
-        val container = a11yServiceTool.findNodeByReourceId("com.netease.cloudmusic:id/rn_content")
-
-        ScriptLogger.i(TAG, "找到 container")
-
-        val watchVideoNode = a11yServiceTool.findNodeByText(container, "看视频，点亮拼图")
-        if (watchVideoNode != null) {
-            ScriptLogger.i(TAG, "找到 看视频，点亮拼图")
-            currentState = NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE
-            handleLightUpPuzzle {
-                handleStateChange(NeteaseState.WAIT_TO_HANDLE_REWARD_WAY)
+        when {
+            // 如果在桌面，尝试通过 Shizuku 唤起
+            currentPkg == "com.android.launcher" || currentPkg?.contains("launcher") == true -> {
+                ScriptLogger.i(TAG, "回到了桌面，尝试重新唤起...")
+                shizukuTool.openAppByPackageName(APP_PACKAGE_NAME)
             }
-            return
-        }
-
-        val finishedNode = a11yServiceTool.findNodeByText(container, "已全部点亮，明天再来")
-        if (finishedNode != null) {
-            ScriptLogger.i(TAG, "找到 已全部点亮，明天再来")
-            handleStateChange(NeteaseState.WAIT_TO_LAUNCH_APP)
-            stopAutomation(reason = FailReason.OTHER, "执行完成。")
-            return
-        }
-        ScriptLogger.i(TAG, "继续返回 APP")
-        a11yServiceTool.performActionGlobal()
-        handler.postDelayed({ handleReturnApp(callback) }, 1000L)
-
-    }
-
-    private fun handleStateChange(newState: NeteaseState) {
-        handler.removeCallbacksAndMessages(null)
-        currentState = newState
-        handleStateLogic()
-    }
-
-    private fun executeWithTimeoutRetry(
-        timeoutMills: Long = 2000L,
-        delayMills: Long = 500L,
-        checkBeforeAction: () -> Unit = {},
-        findAction: () -> AccessibilityNodeInfo?,
-        executeAction: (node: AccessibilityNodeInfo?) -> Unit,
-    ) {
-        val startTime = System.currentTimeMillis()
-
-        val retryRunnable = object : Runnable {
-            override fun run() {
-                checkBeforeAction()
-
-                val result = findAction()
-                if (result != null) {
-                    handler.removeCallbacks(this)
-                    executeAction(result)
-                } else {
-                    val elapsed = System.currentTimeMillis() - startTime
-                    if (elapsed < timeoutMills) {
-                        handler.postDelayed(this, delayMills)
-                    } else {
-                        handler.removeCallbacks(this)
-                        executeAction(null)
-                    }
-                }
+            // 如果在其他干扰 App（如美团），尝试点击其自带的关闭/返回
+            currentPkg == "com.sankuai.meituan" -> {
+                // 这里的 checkAndClick 内部要设 isBusy = true
+                checkAndClick("com.sankuai.meituan:id/btn_left", "美团返回") { }
+            }
+            // 通用情况：执行全局返回动作
+            else -> {
+                ScriptLogger.i(TAG, "执行全局返回...")
+                a11yServiceTool.performActionGlobal() // ACTION_BACK
             }
         }
-        handler.post(retryRunnable)
     }
 }

@@ -64,6 +64,8 @@ coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutin
 # --- Shizuku ---
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+shizuku-hidden = { module = "dev.rikka.hidden:stub", version = "4.4.0" }
+
 
 # --- 测试 ---
 junit = { group = "junit", name = "junit", version.ref = "junit" }
