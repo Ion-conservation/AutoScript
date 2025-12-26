@@ -11,8 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import auto.script.executor.CloudmusicExecutor
-import auto.script.executor.TaobaoExecutor
+import auto.script.feature.netease.NeteaseExecutor
+import auto.script.feature.taobao.TaobaoExecutor
 import auto.script.shizuku.ShizukuManager
 import auto.script.ui.theme.AutoScriptAppTheme
 import auto.script.utils.ScriptUtils
@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var taobaoExecutor: TaobaoExecutor
 
     @Inject
-    lateinit var cloudmusicExecutor: CloudmusicExecutor
+    lateinit var neteaseExecutor: NeteaseExecutor
 
     private var TAG = "MainActivity"
 
@@ -152,12 +152,12 @@ class MainActivity : AppCompatActivity() {
         // CloudMusic 按钮逻辑
         CloudmusicStartButton.setOnClickListener {
 
-            cloudmusicExecutor.startAutomation()
+            neteaseExecutor.startAutomation()
         }
 
         CloudmusicStopButton.setOnClickListener {
 
-            cloudmusicExecutor.stopAutomation()
+            neteaseExecutor.stopAutomation()
         }
 
         // Taobao 按钮逻辑

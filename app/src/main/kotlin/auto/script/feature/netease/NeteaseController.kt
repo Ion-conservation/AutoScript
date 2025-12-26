@@ -2,7 +2,6 @@ package auto.script.feature.netease
 
 import android.util.Log
 import auto.script.A11yService.A11yServiceRepository
-import auto.script.executor.CloudmusicExecutor
 import auto.script.shizuku.ShizukuBindState
 import auto.script.shizuku.ShizukuManager
 import auto.script.shizuku.ShizukuRepository
@@ -12,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class NeteaseController @Inject constructor(
-    private val executor: CloudmusicExecutor,
+    private val executor: NeteaseExecutor,
     private val a11yServiceRepository: A11yServiceRepository,
     private val shizukuRepository: ShizukuRepository,
     private val shizukuManager: ShizukuManager,

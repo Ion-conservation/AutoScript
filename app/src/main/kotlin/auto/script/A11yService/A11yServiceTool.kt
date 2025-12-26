@@ -44,6 +44,12 @@ class A11yServiceTool @Inject constructor(
         }
     }
 
+    override fun getRootNode(): AccessibilityNodeInfo? {
+        return a11yServiceRepository.withService { a11yServiceInstance ->
+            a11yServiceInstance.rootInActiveWindow
+        }
+    }
+
     /**
      * 在指定节点树中查找第一个匹配的元素
      * @param root 根节点（通常是 service.rootInActiveWindow）

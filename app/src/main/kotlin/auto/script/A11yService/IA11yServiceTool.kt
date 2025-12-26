@@ -10,6 +10,8 @@ interface IA11yServiceTool {
 
     fun findNodeByReourceId(resourceId: String): AccessibilityNodeInfo?
 
+    fun getRootNode(): AccessibilityNodeInfo?
+
     fun findNodeByText(root: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo?
 
     fun findNodeByClassAndText(
