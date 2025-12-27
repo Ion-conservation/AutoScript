@@ -7,14 +7,42 @@ class NodePromise(
     private val handler: Handler,
     private val finder: NodeFinder
 ) {
-    private var thenBlock: ((NodeResult?) -> Unit)? = null
+
+    private var timeoutMills: Long = 2000L
+    private var delayMills: Long = 500L
+    private var isRetryMode = true
+
+    private var thenBlock: ((NodeResult) -> Unit)? = null
+    private var failBlock: (() -> Unit)? = null
     private var catchBlock: ((Throwable) -> Unit)? = null
 
-    // 现在 then 只是一个简单的回调注册
-    fun then(block: (NodeResult?) -> Unit): NodePromise {
+    // 1. 配置重试参数（仅记录参数，不执行）
+    fun retry(timeout: Long = 2000L, delay: Long = 500L): NodePromise {
+        this.timeoutMills = timeout
+        this.delayMills = delay
+        this.isRetryMode = true
+        return this
+    }
+
+    // 2. 配置成功回调
+    fun then(block: (NodeResult) -> Unit): NodePromise {
         this.thenBlock = block
         return this
     }
+
+
+    fun fail(block: () -> Unit): NodePromise {
+        this.failBlock = block
+        return this
+    }
+
+
+    // 3. 配置失败回调
+    fun catch(block: (Throwable) -> Unit): NodePromise {
+        this.catchBlock = block
+        return this
+    }
+
 
     // start 方法现在只负责单次执行
     fun start() {
@@ -24,7 +52,13 @@ class NodePromise(
                 val result = tryFind()
                 // 回到主线程执行回调
                 handler.post {
-                    thenBlock?.invoke(result)
+                    if (result == null) {
+                        failBlock?.invoke()
+                        return@post
+                    } else {
+                        thenBlock?.invoke(result)
+                    }
+
                 }
             } catch (e: Throwable) {
                 handler.post {
@@ -35,11 +69,6 @@ class NodePromise(
     }
 
     private fun tryFind(): NodeResult? {
-        // A11y 查找
-        finder.findByA11y()?.let { return NodeResult.A11yNode(it) }
-        // Shizuku 查找
-        finder.findByShizuku()?.let { return it }
-        return null
+        return finder.findWithRetry()
     }
-
 }

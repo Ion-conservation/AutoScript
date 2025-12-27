@@ -28,7 +28,7 @@ class A11yServiceManager : AccessibilityService() {
     // ------------------ AccessibilityService 生命周期 ------------------
     override fun onServiceConnected() {
 
-        ScriptLogger.d(TAG, "A11yService connected. ")
+        ScriptLogger.i(TAG, "A11yService connected. ")
 
         a11yServiceRepository.updateA11yServiceConnectState(true)
         a11yServiceRepository.attachServiceInstance(this)

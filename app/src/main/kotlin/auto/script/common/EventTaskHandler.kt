@@ -9,7 +9,7 @@ interface EventTaskHandler {
     fun handleAccessibilityEvent(event: AccessibilityEvent)
 }
 
-fun AccessibilityNodeInfo.centerPoint(): Pair<Int, Int>? {
+fun AccessibilityNodeInfo.getCenterPoint(): Pair<Int, Int>? {
     val rect = Rect()
     getBoundsInScreen(rect)
     if (rect.isEmpty) return null
