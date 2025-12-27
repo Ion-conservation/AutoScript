@@ -1,18 +1,18 @@
 package auto.script.A11yService
 
 import android.view.accessibility.AccessibilityEvent
-import auto.script.executor.CloudmusicExecutor
-import auto.script.executor.TaobaoExecutor
+import auto.script.feature.netease.NeteaseExecutor
+import auto.script.feature.taobao.TaobaoExecutor
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class A11yEventDispatcher @Inject constructor(
     private val taobaoExecutor: TaobaoExecutor,
-    private val cloudmusicExecutor: CloudmusicExecutor
+    private val neteaseExecutor: NeteaseExecutor
 ) {
     fun dispatch(event: AccessibilityEvent) {
         taobaoExecutor.handleAccessibilityEvent(event)
-        cloudmusicExecutor.handleAccessibilityEvent(event)
+        neteaseExecutor.handleAccessibilityEvent(event)
     }
 }

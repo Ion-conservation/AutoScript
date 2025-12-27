@@ -1,4 +1,4 @@
-package auto.script.executor
+package auto.script.feature.taobao
 
 import android.os.Handler
 import android.os.Looper
@@ -14,7 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
-
 
 @Singleton
 class TaobaoExecutor @Inject constructor() : EventTaskHandler {
