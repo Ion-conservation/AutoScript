@@ -1,0 +1,34 @@
+# Node Tool
+
+##  Description
+
+一个利用 A11yService 和 Shizuku 查找节点的工具。优先使用 A11yService，如果 A11yService 失败，失败次数到达 3 次后，则使用 Shizuku（避免占用过多资源导致 A11yService 断开）。
+
+##  Usage
+
+### Usage 1
+
+获取元素，用于判断元素是否存在，返回 NodeResult | null
+
+```kotlin
+fun findLaunchApp(): NodeResult? {
+    val resourceId = "com.netease.cloudmusic:id/skipBtn"
+    return nodeTool.findByResourceId(resourceId)
+        .tryFind()
+    }
+```
+
+### Usage 2
+
+获取元素并点击，链式操作，返回 NodeResult | null
+
+```kotlin
+fun handleLaunchingApp() {
+    val resourceId = "com.netease.cloudmusic:id/skipBtn"
+    nodeTool.findByResourceId(resourceId)
+        .retry(timeout = 2000L)
+        .then { node ->
+            node.click()
+        }.fail {  }.start()
+    }
+```

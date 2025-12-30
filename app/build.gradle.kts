@@ -36,6 +36,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         manifestPlaceholders["appA11yServiceName"] = "A ${applicationId}"
         buildConfigField("String", "APP_PACKAGE_NAME", "\"com.netease.cloudmusic\"")
+
     }
 
 
@@ -53,6 +54,7 @@ android {
             )
             signingConfig = signingConfigs.getByName("release")
             buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
+            resValue("string", "app_name", "正式版")
         }
 
         create("dev") {
@@ -70,6 +72,7 @@ android {
 
             // dev 强制重新走 Shizuku 授权流程
             buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "true")
+            resValue("string", "app_name", "开发版")
         }
     }
 

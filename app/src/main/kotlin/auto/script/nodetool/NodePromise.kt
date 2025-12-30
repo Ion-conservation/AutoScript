@@ -68,7 +68,7 @@ class NodePromise(
         }.start()
     }
 
-    private fun tryFind(): NodeResult? {
+    fun tryFind(): NodeResult? {
         return finder.findWithRetry()
     }
 }

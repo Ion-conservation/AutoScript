@@ -1,5 +1,6 @@
 package auto.script.feature.netease
 
+import NodeResult
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
@@ -48,7 +49,7 @@ class NeteaseExecutor @Inject constructor(
 
                 if (currentPkg == APP_PACKAGE_NAME) {
                     ScriptLogger.i(TAG, "心跳")
-                    handleStateLogic()
+                    handleStateChange()
                 } else if (currentPkg != null) {
                     // 只有明确拿到了非目标包名，才执行返回逻辑
                     handleReturnAppLogic()
@@ -105,7 +106,7 @@ class NeteaseExecutor @Inject constructor(
     }
 
 
-    private fun handleStateLogic() {
+    private fun handleStateChange() {
 
 
         // 每次执行前先处理弹窗
@@ -147,6 +148,53 @@ class NeteaseExecutor @Inject constructor(
     // -------------------------
     // 业务逻辑封装（非阻塞式）
     // -------------------------
+    /**
+     * 查找启动页跳过按钮
+     * */
+    fun findLaunchAppSkipButton(): NodeResult? {
+        val resourceId = "com.netease.cloudmusic:id/skipBtn"
+        return nodeTool.findByResourceId(resourceId).tryFind()
+    }
+
+    /**
+     * 查找侧边栏按钮
+     * */
+    fun findSideBar(): NodeResult? {
+        val resourceId = "com.netease.cloudmusic:id/menu_icon_container"
+        return nodeTool.findByResourceId(resourceId).tryFind()
+    }
+
+    /**
+     * 查找侧边栏按钮
+     * */
+    fun findFreeButton(): NodeResult? {
+        val text = "免费听VIP歌曲"
+        return nodeTool.findByText(text).tryFind()
+    }
+
+    /**
+     * 查找 "看视频，点亮拼图" 按钮
+     * */
+    fun findPuzzleButton(): String {
+        val text = "看视频，点亮拼图"
+        return nodeTool.findByText(text).tryFind()?.text ?: ""
+    }
+
+    /**
+     * 查找 "已达上限" 文本
+     * */
+    fun findPuzzleFinishedText(): String {
+        val text = "已达上限"
+        return nodeTool.findByText(text).tryFind()?.text ?: ""
+    }
+
+    /**
+     * 查找 "已达上限" 文本
+     * */
+    fun findAdDescNode(): String {
+        val resId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
+        return nodeTool.findByResourceId(resId).tryFind()?.text ?: ""
+    }
 
     fun handleLaunchingApp(onSuccess: () -> Unit) {
         isBusy = true
@@ -172,7 +220,10 @@ class NeteaseExecutor @Inject constructor(
                 node.click()
                 onSuccess()
             }.fail {
-                stopAutomation(FailReason.NODE_NOT_FOUND, "找不到侧边栏按钮")
+                ScriptLogger.i(TAG, "找不到侧边栏按钮，尝试重试机制")
+                retry {
+                    stopAutomation(FailReason.NODE_NOT_FOUND, "找不到侧边栏按钮")
+                }
             }.start()
     }
 
@@ -190,7 +241,10 @@ class NeteaseExecutor @Inject constructor(
                 onSuccess()
 
             }.fail {
-                stopAutomation(FailReason.NODE_NOT_FOUND, "找不到侧边栏按钮")
+                ScriptLogger.i(TAG, "找不到免费听VIP歌曲按钮，尝试重试机制")
+                retry {
+                    stopAutomation(FailReason.NODE_NOT_FOUND, "找不到免费听VIP歌曲按钮")
+                }
             }.start()
     }
 
@@ -209,9 +263,14 @@ class NeteaseExecutor @Inject constructor(
                 onSuccess()
             }
             .fail {
-                nodeTool.findByText("已全部点亮，明天再来").then { finishedNode ->
+                nodeTool.findByText("已达上限").then { finishedNode ->
                     stopAutomation(FailReason.OTHER, "拼图任务已全部完成")
                     isBusy = false
+                }.fail {
+                    ScriptLogger.i(TAG, "找不到拼图相关按钮，尝试重试机制")
+                    retry {
+                        stopAutomation(FailReason.NODE_NOT_FOUND, "找不到拼图相关按钮")
+                    }
                 }.start()
             }.start()
     }
@@ -241,10 +300,39 @@ class NeteaseExecutor @Inject constructor(
                     center?.let { (x, y) ->
                         shizukuTool.tap(x, y)
                     }
-                    handler.postDelayed({
 
-                        onSuccess()
-                    }, 11000L)
+                    // 点击后等待进入另一个APP
+                    handler.postDelayed({
+                        // 开始定时滑动，逃过活动检测
+                        var swipeCount = 0
+                        val maxSwipes = 3  // 滑动3次
+                        val screenHeight = 2000  // 根据实际屏幕调整
+                        val screenWidth = 1080   // 根据实际屏幕调整
+
+                        val swipeTask = object : Runnable {
+                            override fun run() {
+                                if (swipeCount < maxSwipes) {
+                                    // 从屏幕中下部向上滑动
+                                    val startX = screenWidth / 2
+                                    val startY = (screenHeight * 0.7).toInt()
+                                    val endX = screenWidth / 2
+                                    val endY = (screenHeight * 0.3).toInt()
+
+                                    shizukuTool.swipe(startX, startY, endX, endY, 300)
+                                    ScriptLogger.i(TAG, "执行第 ${swipeCount + 1} 次滑动")
+
+                                    swipeCount++
+                                    handler.postDelayed(this, 3000L)  // 3秒后再次滑动
+                                } else {
+                                    ScriptLogger.i(TAG, "滑动完成，执行onSuccess")
+                                    onSuccess()
+                                }
+                            }
+                        }
+
+                        // 开始第一次滑动
+                        handler.post(swipeTask)
+                    }, 2000L)  // 点击后等待2秒进入APP
                 }
             }
         }.start()
@@ -262,17 +350,87 @@ class NeteaseExecutor @Inject constructor(
         handleDialog()
     }
 
+    /**
+     * 重试机制：当某个步骤失败时，依次检查所有关键节点，找到匹配的节点后恢复到对应状态
+     */
+    private fun retry(onFail: () -> Unit) {
+        ScriptLogger.i(TAG, "开始重试机制，检查所有关键节点...")
+
+        // 2. 检查侧边栏按钮
+        findSideBar()?.let { node ->
+            ScriptLogger.i(TAG, "重试：找到侧边栏按钮")
+            node.click()
+            currentState = NeteaseState.WAIT_TO_CLICK_FREE_BUTTON
+            isBusy = false
+            return
+        }
+
+        // 3. 检查免费听VIP歌曲按钮
+        findFreeButton()?.let { node ->
+            ScriptLogger.i(TAG, "重试：找到免费听VIP歌曲按钮")
+            val center = node.getCenterPoint()
+            center?.let { (x, y) ->
+                shizukuTool.tap(x, y)
+            }
+            currentState = NeteaseState.WAIT_TO_LIGHT_UP_PUZZLE
+            isBusy = false
+            return
+        }
+
+        // 4. 检查拼图任务完成文本
+        if (findPuzzleFinishedText().isNotEmpty()) {
+            ScriptLogger.i(TAG, "重试：发现拼图任务已全部完成")
+            stopAutomation(FailReason.OTHER, "已达上限")
+            return
+        }
+
+        // 5. 检查看视频点亮拼图按钮
+        if (findPuzzleButton().isNotEmpty()) {
+            ScriptLogger.i(TAG, "重试：找到看视频点亮拼图按钮")
+            nodeTool.findByText("看视频，点亮拼图").then { node ->
+                val center = node.getCenterPoint()
+                center?.let { (x, y) ->
+                    shizukuTool.tap(x, y)
+                }
+                currentState = NeteaseState.WAIT_TO_HANDLE_REWARD_WAY
+                isBusy = false
+            }.start()
+            return
+        }
+
+        // 6. 检查广告描述节点
+        if (findAdDescNode().isNotEmpty()) {
+            ScriptLogger.i(TAG, "重试：找到广告描述节点")
+            currentState = NeteaseState.WAIT_TO_HANDLE_REWARD_WAY
+            isBusy = false
+            handleAdRewardLogic {
+                currentState = NeteaseState.WAIT_TO_RETURN_APP
+                isBusy = false
+            }
+            return
+        }
+
+        // 所有节点都未找到，执行失败回调
+        ScriptLogger.i(TAG, "重试：所有关键节点均未找到")
+        onFail()
+    }
+
     fun handleDialog() {
         val popupRules = listOf(
             "com.netease.cloudmusic:id/design_bottom_sheet",
             "com.oplus.securitypermission:id/rootView",
-            "com.netease.cloudmusic:id/positiveBtn"
+            "com.netease.cloudmusic:id/positiveBtn", // 继续观看独有
+            "com.netease.cloudmusic:id/updateVersionBtn" // 更新版本
+
         )
         for (id in popupRules) {
             val nodes = a11yServiceTool.findNodeByReourceId(id)
             if (nodes != null) {
                 ScriptLogger.i(TAG, "检测到干扰弹窗: $id，尝试关闭")
-                a11yServiceTool.performActionGlobal() // 或其他关闭逻辑
+
+                a11yServiceTool.performActionGlobal()
+
+                // 或其他关闭逻辑
                 return
             }
         }
@@ -304,13 +462,13 @@ class NeteaseExecutor @Inject constructor(
             return
         }
 
-        // ------------------ 情况三：找到了 "已全部点亮，明天再来"，停止脚本 ------------------
+        // ------------------ 情况三：找到了 "已达上限"，停止脚本 ------------------
         if (a11yServiceTool.findNodeByText(
                 a11yServiceTool.getRootNode(),
-                "已全部点亮，明天再来"
+                "已达上限"
             ) != null
         ) {
-            stopAutomation(reason = FailReason.OTHER, message = "已全部点亮，明天再来")
+            stopAutomation(reason = FailReason.OTHER, message = "已达上限")
             return
         }
 
