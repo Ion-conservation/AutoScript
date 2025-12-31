@@ -1,8 +1,6 @@
 package auto.script.shizuku
 
 import android.app.IActivityManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import auto.script.utils.ScriptLogger
 import rikka.shizuku.ShizukuBinderWrapper
@@ -17,12 +15,6 @@ class UserService : IUserService.Stub() {
 
     private val TAG = "UserService"
 
-    private fun logInMainThread(message: String) {
-        Handler(Looper.getMainLooper()).post {
-            Log.d(TAG, message)
-        }
-    }
-
     /**
      * 内部辅助函数：真正执行 Shell 命令的地方
      * 由于 UserService 运行在高权限进程中，直接使用 Runtime.exec 执行命令。
@@ -32,7 +24,7 @@ class UserService : IUserService.Stub() {
         try {
             // 1. 直接使用 Runtime 创建进程（因为已经在高权限上下文中）
             val process = Runtime.getRuntime().exec(cmd)
-            logInMainThread("Executing: $cmd")
+            Log.i(TAG, "Executing: $cmd")
 
             // 2. 分别读取标准输出 (stdout) 和标准错误 (stderr)
             //    我们必须同时读取两者，否则如果缓冲区满了，进程会卡住！
@@ -42,14 +34,14 @@ class UserService : IUserService.Stub() {
             // 3. 等待命令执行完毕
             val exitCode = process.waitFor()
             if (exitCode == 0) {
-                logInMainThread("$cmd 命令执行成功。")
+                Log.i(TAG, "$cmd 命令执行成功。")
             } else {
-                logInMainThread("$cmd 命令执行失败，退出代号： $exitCode。")
+                Log.i(TAG, "$cmd 命令执行失败，退出代号： $exitCode。")
             }
             // 4. 返回输出
             return Pair(stdout, stderr)
         } catch (e: Exception) {
-            logInMainThread("$cmd 命令执行发生错误: ${e.message}")
+            Log.i(TAG, "$cmd 命令执行发生错误: ${e.message}")
             return Pair("", e.message ?: "Unknown Error")
         }
     }
@@ -138,7 +130,7 @@ class UserService : IUserService.Stub() {
     }
 
     override fun exit() {
-        logInMainThread("UserService exit() called. Process will terminate.")
+        Log.i(TAG, "UserService exit() called. Process will terminate.")
         // 优雅地关闭这个高权限进程
         exitProcess(0)
     }

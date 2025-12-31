@@ -16,14 +16,8 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file("your-release-key.keystore")
-            storePassword = "yourStorePassword"
-            keyAlias = "yourKeyAlias"
-            keyPassword = "yourKeyPassword"
-        }
-
         getByName("debug")
+        // release 暂时使用 debug 签名，正式发布时需要配置真实签名
     }
 
     defaultConfig {
@@ -52,7 +46,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // 暂时使用 debug 签名，正式发布时需要配置真实签名
+            signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
             resValue("string", "app_name", "正式版")
         }
