@@ -9,6 +9,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NeteaseViewModel @Inject constructor(
     private val controller: NeteaseController,
+    private val executor: NeteaseExecutor,
     private val a11yServiceRepository: A11yServiceRepository,
     private val shizukuRepository: ShizukuRepository
 ) : ViewModel() {
@@ -16,6 +17,7 @@ class NeteaseViewModel @Inject constructor(
     val onA11yConnected = a11yServiceRepository.onConnected
     val isA11yServiceReady = controller.isA11yServiceReady
     val shizukuStatus = controller.shizukuStatus
+    val consoleOutput = executor.consoleOutput // 暴露控制台输出
 
     fun startAutomation() = controller.startAutomation()
     fun openA11ySettings() = controller.openAccessibilitySettings()

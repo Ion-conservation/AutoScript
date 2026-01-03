@@ -17,6 +17,12 @@ fun PreviewNeteaseScreen() {
             grant = ShizukuGrantState.GRANTED,
             bind = ShizukuBindState.BINDED
         ),
+        consoleOutput = listOf(
+            "[12:30:45] ▶ 启动脚本...",
+            "[12:30:46] ✓ 打开应用成功",
+            "[12:30:47] ➤ 正在启动应用，检测启动广告...",
+            "[12:30:48] • 无启动广告，继续"
+        ),
         openA11ySettings = {},
         initShizukuTool = {},
         onStart = {}

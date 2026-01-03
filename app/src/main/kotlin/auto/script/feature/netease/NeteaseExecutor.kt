@@ -13,6 +13,12 @@ import auto.script.shizuku.ShizukuTool
 import auto.script.state.NeteaseState
 import auto.script.utils.ScriptLogger
 import auto.script.utils.ScriptUtils
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +32,14 @@ class NeteaseExecutor @Inject constructor(
     companion object {
         private const val TAG = "网易云音乐脚本"
         private const val APP_PACKAGE_NAME = "com.netease.cloudmusic"
+        private const val MAX_CONSOLE_LINES = 50 // 最多保留50行日志
     }
+
+    // 控制台日志流
+    private val _consoleOutput = MutableStateFlow<List<String>>(emptyList())
+    val consoleOutput: StateFlow<List<String>> = _consoleOutput.asStateFlow()
+
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
     private val handler = Handler(Looper.getMainLooper())
     private var currentState: NeteaseState = NeteaseState.WAIT_TO_LAUNCH_APP
@@ -35,6 +48,24 @@ class NeteaseExecutor @Inject constructor(
 
     // 关键：防止上一轮逻辑没跑完，下一轮心跳又进来了
     private var isBusy = false
+
+    /**
+     * 添加日志到控制台输出
+     */
+    private fun logToConsole(message: String) {
+        val timestamp = timeFormat.format(Date())
+        val logLine = "[$timestamp] $message"
+        val currentLogs = _consoleOutput.value.toMutableList()
+        currentLogs.add(logLine)
+        // 保持最多 MAX_CONSOLE_LINES 行
+        if (currentLogs.size > MAX_CONSOLE_LINES) {
+            currentLogs.removeAt(0)
+        }
+        _consoleOutput.value = currentLogs
+
+        // 同时输出到系统日志
+        ScriptLogger.i(TAG, message)
+    }
 
 
     object AppStatusMonitor {
@@ -64,9 +95,10 @@ class NeteaseExecutor @Inject constructor(
      * 启动自动化（入口）
      */
     fun startAutomation() {
-        ScriptLogger.i(TAG, "startAutomation：启动脚本。")
+        logToConsole("▶ 启动脚本...")
         try {
             shizukuTool.openAppByPackageName(APP_PACKAGE_NAME)
+            logToConsole("✓ 打开应用成功")
 
             // 1. 初始化状态
             currentState = NeteaseState.LAUNCHING_APP
@@ -75,8 +107,10 @@ class NeteaseExecutor @Inject constructor(
             // 2. 开启心跳（先移除旧的，防止双倍心跳）
             handler.removeCallbacks(heartbeatTask)
             handler.postDelayed(heartbeatTask, 1000L)
+            logToConsole("✓ 心跳已启动，等待处理...")
 
         } catch (e: IllegalStateException) {
+            logToConsole("✖ 启动失败: ${e.message}")
             stopAutomation(FailReason.LAUNCHING_APP_FAILED, "启动失败: ${e.message}")
         }
     }
@@ -85,22 +119,11 @@ class NeteaseExecutor @Inject constructor(
      * 停止自动化
      */
     fun stopAutomation(reason: FailReason, message: String? = null) {
-        ScriptLogger.i(TAG, "stopAutomation：停止脚本。原因：$reason, $message")
+        logToConsole("⊟ 停止脚本: $reason ${message ?: ""}")
 
         // 停止心跳
         handler.removeCallbacks(heartbeatTask)
         isBusy = false
-
-        // Dump 逻辑（保持你原有的）
-//        val root = a11yServiceTool.getRootNode()
-//        val dumpInfo = DumpInfo(System.currentTimeMillis(), currentState, reason, message)
-//        DumpManager.dump(dumpInfo, root, { path ->
-//            try {
-//                shizukuTool.screencap(path); true
-//            } catch (e: Exception) {
-//                false
-//            }
-//        }, true)
 
         currentState = NeteaseState.WAIT_TO_LAUNCH_APP
     }
@@ -198,29 +221,31 @@ class NeteaseExecutor @Inject constructor(
 
     fun handleLaunchingApp(onSuccess: () -> Unit) {
         isBusy = true
-        ScriptLogger.i(TAG, "正在启动应用，同时检测启动广告。")
+        logToConsole("➤ 正在启动应用，检测启动广告...")
         val resourceId = "com.netease.cloudmusic:id/skipBtn"
         nodeTool.findByResourceId(resourceId)
             .retry(timeout = 2000L)
             .then { node ->
-                ScriptLogger.i(TAG, "检测到广告，点击跳过。")
+                logToConsole("✓ 检测到广告，点击跳过")
                 node.click()
                 onSuccess()
             }.fail {
+                logToConsole("• 无启动广告，继续")
                 onSuccess()
             }.start()
     }
 
     fun handleOpenSideBar(onSuccess: () -> Unit) {
         isBusy = true
-        ScriptLogger.i(TAG, "正在打开侧边栏。")
+        logToConsole("➤ 正在打开侧边栏...")
         val resourceId = "com.netease.cloudmusic:id/menu_icon_container"
         nodeTool.findByResourceId(resourceId)
             .then { node ->
+                logToConsole("✓ 找到侧边栏按钮，点击")
                 node.click()
                 onSuccess()
             }.fail {
-                ScriptLogger.i(TAG, "找不到侧边栏按钮，尝试重试机制")
+                logToConsole("✖ 找不到侧边栏按钮，尝试重试机制")
                 retry {
                     stopAutomation(FailReason.NODE_NOT_FOUND, "找不到侧边栏按钮")
                 }
@@ -230,10 +255,11 @@ class NeteaseExecutor @Inject constructor(
     // WIP
     fun handleClickFreeButton(onSuccess: () -> Unit) {
         isBusy = true
-        ScriptLogger.i(TAG, "点击 免费听VIP歌曲。")
+        logToConsole("➤ 点击 免费听VIP歌曲...")
         val text = "免费听VIP歌曲"
         nodeTool.findByText(text)
             .then { node ->
+                logToConsole("✓ 找到免费听VIP歌曲按钮")
                 val center = node.getCenterPoint()
                 center?.let { (x, y) ->
                     shizukuTool.tap(x, y)
@@ -241,7 +267,7 @@ class NeteaseExecutor @Inject constructor(
                 onSuccess()
 
             }.fail {
-                ScriptLogger.i(TAG, "找不到免费听VIP歌曲按钮，尝试重试机制")
+                logToConsole("✖ 找不到免费听VIP歌曲按钮，尝试重试机制")
                 retry {
                     stopAutomation(FailReason.NODE_NOT_FOUND, "找不到免费听VIP歌曲按钮")
                 }
@@ -254,8 +280,10 @@ class NeteaseExecutor @Inject constructor(
      */
     private fun handlePuzzleState(onSuccess: () -> Unit) {
         isBusy = true
+        logToConsole("➤ 检测拼图任务...")
         nodeTool.findByText("看视频，点亮拼图")
             .then { node ->
+                logToConsole("✓ 找到拼图任务，点击")
                 val center = node.getCenterPoint()
                 center?.let { (x, y) ->
                     shizukuTool.tap(x, y)
@@ -263,15 +291,29 @@ class NeteaseExecutor @Inject constructor(
                 onSuccess()
             }
             .fail {
-                nodeTool.findByText("已达上限").then { finishedNode ->
-                    stopAutomation(FailReason.OTHER, "拼图任务已全部完成")
-                    isBusy = false
-                }.fail {
-                    ScriptLogger.i(TAG, "找不到拼图相关按钮，尝试重试机制")
+                // 检测多个完成状态文本
+                val finishTexts = listOf("已达上限", "已全部点亮", "明天再来")
+                var foundFinish = false
+
+                for (text in finishTexts) {
+                    nodeTool.findByText(text).then { finishedNode ->
+                        logToConsole("✓ 拼图任务已全部完成（检测到: $text）")
+                        stopAutomation(FailReason.OTHER, "拼图任务已全部完成")
+                        isBusy = false
+                        foundFinish = true
+                    }.fail {
+                        // 继续检测下一个文本
+                    }.start()
+
+                    if (foundFinish) break
+                }
+
+                if (!foundFinish) {
+                    logToConsole("✖ 找不到拼图相关按钮，尝试重试机制")
                     retry {
                         stopAutomation(FailReason.NODE_NOT_FOUND, "找不到拼图相关按钮")
                     }
-                }.start()
+                }
             }.start()
     }
 
@@ -280,16 +322,19 @@ class NeteaseExecutor @Inject constructor(
      */
     private fun handleAdRewardLogic(onSuccess: () -> Unit) {
         isBusy = true
+        logToConsole("➤ 检测广告类型...")
         val resId = "com.netease.cloudmusic:id/tv_ad_bottom_enhance_main_title"
         nodeTool.findByResourceId(resId).then { node ->
             val adText = node.text ?: ""
-            ScriptLogger.i(TAG, "检测到广告类型: $adText")
+            logToConsole("✓ 检测到广告类型: $adText")
             val center = node.getCenterPoint()
             when (adText) {
                 "看15秒后点击" -> {
+                    logToConsole("• 等待15秒...")
                     handler.postDelayed({
                         center?.let { (x, y) ->
                             shizukuTool.tap(x, y)
+                            logToConsole("✓ 15秒到达，已点击")
                         }
                         onSuccess()
 
@@ -297,6 +342,7 @@ class NeteaseExecutor @Inject constructor(
                 }
 
                 "点击跳转APP停留10秒" -> {
+                    logToConsole("• 点击跳转，并执行滑动...")
                     center?.let { (x, y) ->
                         shizukuTool.tap(x, y)
                     }
@@ -319,12 +365,12 @@ class NeteaseExecutor @Inject constructor(
                                     val endY = (screenHeight * 0.3).toInt()
 
                                     shizukuTool.swipe(startX, startY, endX, endY, 300)
-                                    ScriptLogger.i(TAG, "执行第 ${swipeCount + 1} 次滑动")
+                                    logToConsole("• 执行第 ${swipeCount + 1} 次滑动")
 
                                     swipeCount++
-                                    handler.postDelayed(this, 3000L)  // 3秒后再次滑动
+                                    handler.postDelayed(this, 3500L)  // 3秒后再次滑动
                                 } else {
-                                    ScriptLogger.i(TAG, "滑动完成，执行onSuccess")
+                                    logToConsole("✓ 滑动完成")
                                     onSuccess()
                                 }
                             }
@@ -354,11 +400,11 @@ class NeteaseExecutor @Inject constructor(
      * 重试机制：当某个步骤失败时，依次检查所有关键节点，找到匹配的节点后恢复到对应状态
      */
     private fun retry(onFail: () -> Unit) {
-        ScriptLogger.i(TAG, "开始重试机制，检查所有关键节点...")
+        logToConsole("⟳ 开始重试机制，检查所有关键节点...")
 
         // 2. 检查侧边栏按钮
         findSideBar()?.let { node ->
-            ScriptLogger.i(TAG, "重试：找到侧边栏按钮")
+            logToConsole("✓ 重试：找到侧边栏按钮")
             node.click()
             currentState = NeteaseState.WAIT_TO_CLICK_FREE_BUTTON
             isBusy = false
@@ -367,7 +413,7 @@ class NeteaseExecutor @Inject constructor(
 
         // 3. 检查免费听VIP歌曲按钮
         findFreeButton()?.let { node ->
-            ScriptLogger.i(TAG, "重试：找到免费听VIP歌曲按钮")
+            logToConsole("✓ 重试：找到免费听VIP歌曲按钮")
             val center = node.getCenterPoint()
             center?.let { (x, y) ->
                 shizukuTool.tap(x, y)
@@ -379,14 +425,14 @@ class NeteaseExecutor @Inject constructor(
 
         // 4. 检查拼图任务完成文本
         if (findPuzzleFinishedText().isNotEmpty()) {
-            ScriptLogger.i(TAG, "重试：发现拼图任务已全部完成")
+            logToConsole("✓ 重试：发现拼图任务已全部完成")
             stopAutomation(FailReason.OTHER, "已达上限")
             return
         }
 
         // 5. 检查看视频点亮拼图按钮
         if (findPuzzleButton().isNotEmpty()) {
-            ScriptLogger.i(TAG, "重试：找到看视频点亮拼图按钮")
+            logToConsole("✓ 重试：找到看视频点亮拼图按钮")
             nodeTool.findByText("看视频，点亮拼图").then { node ->
                 val center = node.getCenterPoint()
                 center?.let { (x, y) ->
@@ -400,7 +446,7 @@ class NeteaseExecutor @Inject constructor(
 
         // 6. 检查广告描述节点
         if (findAdDescNode().isNotEmpty()) {
-            ScriptLogger.i(TAG, "重试：找到广告描述节点")
+            logToConsole("✓ 重试：找到广告描述节点")
             currentState = NeteaseState.WAIT_TO_HANDLE_REWARD_WAY
             isBusy = false
             handleAdRewardLogic {
@@ -411,7 +457,7 @@ class NeteaseExecutor @Inject constructor(
         }
 
         // 所有节点都未找到，执行失败回调
-        ScriptLogger.i(TAG, "重试：所有关键节点均未找到")
+        logToConsole("✖ 重试：所有关键节点均未找到")
         onFail()
     }
 
@@ -426,7 +472,7 @@ class NeteaseExecutor @Inject constructor(
         for (id in popupRules) {
             val nodes = a11yServiceTool.findNodeByReourceId(id)
             if (nodes != null) {
-                ScriptLogger.i(TAG, "检测到干扰弹窗: $id，尝试关闭")
+                logToConsole("⚠ 检测到干扰弹窗: $id，尝试关闭")
 
                 a11yServiceTool.performActionGlobal()
 

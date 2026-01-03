@@ -4,11 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import auto.script.ui.theme.AutoScriptAppTheme
-import auto.script.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 
@@ -21,15 +16,7 @@ class MainActivity : AppCompatActivity() {
 
 
         setContent {
-
-            val viewModel: MainViewModel = viewModel()
-            val themeStyle by viewModel.currentTheme.collectAsState()
-
-            // 应用动态主题
-            AutoScriptAppTheme(themeStyle = themeStyle) {
                 MyApp()
-            }
-
         }
     }
 

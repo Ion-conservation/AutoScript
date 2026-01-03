@@ -1,157 +1,268 @@
 package auto.script.feature.netease
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import auto.script.shizuku.ShizukuBindState
 import auto.script.shizuku.ShizukuGrantState
 import auto.script.shizuku.ShizukuRunningState
 import auto.script.shizuku.ShizukuStatus
+import auto.script.ui.theme.DashboardColors
 
 
 @Composable
 fun NeteaseScreen(
     isA11yServiceReady: Boolean,
     shizukuStatus: ShizukuStatus,
+    consoleOutput: List<String>,
     openA11ySettings: () -> Unit,
     initShizukuTool: () -> Unit,
     onStart: () -> Unit,
 ) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
     ) {
-        // ------------------ A11y 状态卡片 ------------------
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
+            // 主卡片
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = BorderStroke(1.dp, DashboardColors.BorderColor)
             ) {
-                Text(
-                    text = if (isA11yServiceReady) "A11yService 准备好了" else "A11yService 还没准备好",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Button(
-                    onClick = openA11ySettings,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(top = 12.dp)
-                ) {
-                    Text("打开无障碍设置")
-                }
-            }
-        }
-
-        // ------------------ Shizuku 状态卡片 ------------------
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = when {
-                        shizukuStatus.running == ShizukuRunningState.NOT_RUNNING -> "Shizuku 未运行"
-                        shizukuStatus.grant == ShizukuGrantState.NOT_GRANTED -> "Shizuku 未授权"
-                        shizukuStatus.bind == ShizukuBindState.NOT_BINDED -> "Shizuku 未绑定服务"
-                        else -> "Shizuku 已就绪"
-                    },
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-
-                Button(
-                    onClick = initShizukuTool,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.padding(top = 12.dp)
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = when {
-                            shizukuStatus.running == ShizukuRunningState.NOT_RUNNING -> "启动 Shizuku APP"
-                            shizukuStatus.grant == ShizukuGrantState.NOT_GRANTED -> "到 Shizuku 授权"
-                            shizukuStatus.bind == ShizukuBindState.NOT_BINDED -> "绑定 Shizuku 服务"
-                            else -> "Shizuku 已就绪"
+                        text = "⚡ 网易云音乐自动化",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    // 状态指示器
+                    ServiceStatusRow(
+                        "• Accessibility",
+                        isA11yServiceReady,
+                        DashboardColors.AccentGreen
+                    ) { openA11ySettings() }
+
+                    ServiceStatusRow(
+                        "• Shizuku",
+                        shizukuStatus.bind == ShizukuBindState.BINDED,
+                        DashboardColors.AccentGreen
+                    ) { initShizukuTool() }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 状态提示文本
+                    StatusText(isA11yServiceReady, shizukuStatus)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // 控制按钮
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = onStart,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DashboardColors.AccentGreen
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = isA11yServiceReady && shizukuStatus.bind == ShizukuBindState.BINDED
+                        ) {
+                            Text(
+                                "▶ 启动脚本",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = { /* TODO: 停止功能 */ },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DashboardColors.AccentPink
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                "⊟ 停止脚本",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Console 输出
+                    ConsoleOutput(consoleOutput)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ServiceStatusRow(
+    label: String,
+    isReady: Boolean,
+    accentColor: Color,
+    onAction: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = if (isReady) accentColor else DashboardColors.TextSecondary
+        )
+        Button(
+            onClick = onAction,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isReady) accentColor else DashboardColors.TextSecondary
+            ),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                text = if (isReady) "✓" else "Settings",
+                fontSize = 12.sp,
+                color = if (isReady) Color.Black else Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun StatusText(
+    isA11yServiceReady: Boolean,
+    shizukuStatus: ShizukuStatus
+) {
+    val statusText = when {
+        !isA11yServiceReady -> "⚠ 请先启用无障碍服务"
+        shizukuStatus.running == ShizukuRunningState.NOT_RUNNING -> "⚠ Shizuku 未运行"
+        shizukuStatus.grant == ShizukuGrantState.NOT_GRANTED -> "⚠ Shizuku 未授权"
+        shizukuStatus.bind == ShizukuBindState.NOT_BINDED -> "⚠ Shizuku 未绑定服务"
+        else -> "✓ 所有服务已就绪，可以开始"
+    }
+    val statusColor = when {
+        !isA11yServiceReady -> DashboardColors.WarningOrange
+        shizukuStatus.bind != ShizukuBindState.BINDED -> DashboardColors.WarningOrange
+        else -> DashboardColors.AccentGreen
+    }
+
+    Text(
+        text = statusText,
+        fontSize = 14.sp,
+        color = statusColor,
+        fontWeight = FontWeight.Medium
+    )
+}
+
+@Composable
+fun ConsoleOutput(logs: List<String>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .background(
+                color = Color(0xFF0A0A0A),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp)
+    ) {
+        val scrollState = rememberScrollState()
+        
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+        ) {
+            Text(
+                text = "Console output",
+                fontSize = 12.sp,
+                color = DashboardColors.TextSecondary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            
+            if (logs.isEmpty()) {
+                Text(
+                    text = "$ Waiting for command...",
+                    fontSize = 11.sp,
+                    color = DashboardColors.TextSecondary
+                )
+            } else {
+                logs.forEach { log ->
+                    Text(
+                        text = log,
+                        fontSize = 11.sp,
+                        color = when {
+                            log.contains("✓") || log.contains("▶") -> DashboardColors.AccentGreen
+                            log.contains("✖") || log.contains("⊟") -> DashboardColors.AccentPink
+                            log.contains("⚠") -> DashboardColors.WarningOrange
+                            log.contains("➤") || log.contains("•") -> DashboardColors.InfoBlue
+                            else -> DashboardColors.TextSecondary
                         },
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.padding(vertical = 1.dp)
                     )
                 }
             }
         }
-
-        // 网易云脚本卡片
-        ElevatedCard(
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = Color(0xFFE0F7FA)
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "网易云脚本",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        16.dp,
-                        Alignment.CenterHorizontally
-                    )
-                ) {
-                    Button(
-                        onClick = onStart,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("启动")
-                    }
-                }
+        
+        // 自动滚动到最后
+        androidx.compose.runtime.LaunchedEffect(logs.size) {
+            if (logs.isNotEmpty()) {
+                scrollState.animateScrollTo(scrollState.maxValue)
             }
         }
     }

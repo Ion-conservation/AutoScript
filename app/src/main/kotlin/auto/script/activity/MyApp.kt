@@ -20,69 +20,68 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import auto.script.feature.beverage.BeverageTracker
 import auto.script.feature.netease.Netease
+import auto.script.feature.scheduler.TaskScheduler
+import auto.script.ui.theme.AutoScriptAppTheme
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun MyApp() {
+    AutoScriptAppTheme {
+        val navController = rememberNavController()
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
 
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "My App",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                colors = topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                navigationIcon = {
-                    if (currentRoute != Routes.HOME) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Auto Script",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    colors = topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    navigationIcon = {
+                        if (currentRoute != Routes.HOME) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                            }
                         }
                     }
-
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { }) {
+                    Text("-")
                 }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
-                Text("-")
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                NavHost(navController = navController, startDestination = Routes.HOME) {
+                    composable(Routes.HOME) { Home(navController) }
+                    composable(Routes.NETEASE) { Netease(navController) }
+                    composable(Routes.TAOBAO) { Taobao() }
+                    composable(Routes.AUTOMATION_HUB) { Netease(navController) }
+                    composable(Routes.BEVERAGE_TRACKER) { BeverageTracker() }
+                    composable(Routes.TASK_SCHEDULER) { TaskScheduler() }
+                }
             }
         }
-    ) { innerPadding ->
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(top = 16.dp)
-                .padding(horizontal = 16.dp)
-        ) {
-            NavHost(navController = navController, startDestination = "home") {
-                composable(Routes.HOME) { Home(navController) }
-                composable(Routes.NETEASE) { Netease(navController) }
-                composable(Routes.TAOBAO) { Taobao() }
-            }
-        }
-
     }
-
 }

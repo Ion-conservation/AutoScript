@@ -63,10 +63,12 @@ fun Netease(navController: NavController, viewModel: NeteaseViewModel = hiltView
 
     val isA11yServiceReady by viewModel.isA11yServiceReady.collectAsState()
     val shizukuStatus by viewModel.shizukuStatus.collectAsState()
+    val consoleOutput by viewModel.consoleOutput.collectAsState()
 
     NeteaseScreen(
         isA11yServiceReady = isA11yServiceReady,
         shizukuStatus = shizukuStatus,
+        consoleOutput = consoleOutput,
         openA11ySettings = { viewModel.openA11ySettings() },
         initShizukuTool = { viewModel.initShizukuTool() },
         onStart = { viewModel.startAutomation() }
