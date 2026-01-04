@@ -35,6 +35,7 @@ android {
 
     buildTypes {
         getByName("debug") {
+            applicationIdSuffix = ".debug"
             // Preview 用，不需要强制 Shizuku 重新授权
             buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
             resValue("string", "app_name", "调试版")
@@ -42,6 +43,7 @@ android {
         }
 
         getByName("release") {
+            applicationIdSuffix = ".release"
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -140,6 +142,11 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+
+    // Room 数据库
+    implementation(libs.room.runtime)
+    kapt(libs.room.compiler)
+    implementation(libs.room.ktx)
 }
 
 kotlin {

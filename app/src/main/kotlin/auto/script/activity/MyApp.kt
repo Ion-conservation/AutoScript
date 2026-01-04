@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import auto.script.feature.beverage.BeverageTracker
 import auto.script.feature.netease.Netease
 import auto.script.feature.scheduler.TaskScheduler
+import auto.script.feature.scheduler.TaskSchedulerViewModel
 import auto.script.ui.theme.AutoScriptAppTheme
 
 
@@ -34,6 +35,8 @@ import auto.script.ui.theme.AutoScriptAppTheme
 @Preview(showBackground = true)
 @Composable
 fun MyApp() {
+    val viewModel: TaskSchedulerViewModel = hiltViewModel()
+
     AutoScriptAppTheme {
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -61,11 +64,6 @@ fun MyApp() {
                         }
                     }
                 )
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = { }) {
-                    Text("-")
-                }
             }
         ) { innerPadding ->
             Column(
@@ -79,7 +77,7 @@ fun MyApp() {
                     composable(Routes.TAOBAO) { Taobao() }
                     composable(Routes.AUTOMATION_HUB) { Netease(navController) }
                     composable(Routes.BEVERAGE_TRACKER) { BeverageTracker() }
-                    composable(Routes.TASK_SCHEDULER) { TaskScheduler() }
+                    composable(Routes.TASK_SCHEDULER) { TaskScheduler(viewModel) }
                 }
             }
         }
