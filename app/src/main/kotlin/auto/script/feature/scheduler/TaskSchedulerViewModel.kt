@@ -4,12 +4,17 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import auto.script.common.NotificationService
+import kotlinx.coroutines.flow.combine
+import auto.script.feature.scheduler.db.TaskCategory
 import auto.script.feature.scheduler.db.TaskEntity
+import auto.script.feature.scheduler.db.TaskImportance
 import auto.script.feature.scheduler.db.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -18,29 +23,47 @@ import javax.inject.Inject
 @HiltViewModel
 class TaskSchedulerViewModel @Inject constructor(private val repository: TaskRepository) : ViewModel() {
     
+    // 当前过滤的类别，null 表示显示所有
+    private val _selectedCategory = MutableStateFlow<TaskCategory?>(null)
+    val selectedCategory: StateFlow<TaskCategory?> = _selectedCategory.asStateFlow()
+
+    fun setFilterCategory(category: TaskCategory?) {
+        _selectedCategory.value = category
+    }
+
     // 应用上下文（通过 Hilt 注入或手动设置）
     var applicationContext: Context? = null
     
-    // 获取所有任务流
+    // 获取所有任务流并过滤
     val tasks: StateFlow<List<TaskEntity>> = repository.getAllTasks()
+        .combine(_selectedCategory) { taskList, category ->
+            if (category == null) taskList else taskList.filter { it.category == category }
+        }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     
     // 任务监视器启动标志
     private var isTaskMonitoringStarted = false
 
     // 添加任务
-    fun addTask(time: String, name: String, isActive: Boolean) {
+    fun addTask(time: String, name: String, isActive: Boolean, importance: TaskImportance = TaskImportance.NORMAL, isLocked: Boolean = false, category: TaskCategory = TaskCategory.LIFE) {
         viewModelScope.launch {
-            val task = TaskEntity(time = time, name = name, isActive = isActive)
+            val task = TaskEntity(time = time, name = name, isActive = isActive, importance = importance, isLocked = isLocked, category = category)
             repository.addTask(task)
         }
     }
 
     // 更新任务
-    fun updateTask(id: Int, time: String, name: String, isActive: Boolean) {
+    fun updateTask(id: Int, time: String, name: String, isActive: Boolean, importance: TaskImportance, isLocked: Boolean, category: TaskCategory) {
         viewModelScope.launch {
-            val task = TaskEntity(id = id, time = time, name = name, isActive = isActive)
+            val task = TaskEntity(id = id, time = time, name = name, isActive = isActive, importance = importance, isLocked = isLocked, category = category)
             repository.updateTask(task)
+        }
+    }
+
+    // 切换任务锁定状态
+    fun toggleTaskLock(task: TaskEntity) {
+        viewModelScope.launch {
+            repository.updateTask(task.copy(isLocked = !task.isLocked))
         }
     }
 

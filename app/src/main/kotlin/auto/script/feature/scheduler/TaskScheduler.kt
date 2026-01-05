@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -28,9 +30,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -44,7 +48,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedButton
+import auto.script.feature.scheduler.db.TaskCategory
 import auto.script.feature.scheduler.db.TaskEntity
+import auto.script.feature.scheduler.db.TaskImportance
 import auto.script.ui.theme.DashboardColors
 
 // 辅助函数：格式化时间为 "08:00 AM" 格式
@@ -76,6 +87,7 @@ private fun parseTime(timeStr: String): Pair<Int, Int> {
 @Composable
 fun TaskScheduler(viewModel: TaskSchedulerViewModel? = null) {
     val tasks = viewModel?.tasks?.collectAsState()?.value ?: emptyList()
+    val selectedCategory = viewModel?.selectedCategory?.collectAsState()?.value
     val activeTaskCount = tasks.count { it.isActive }
     val totalTaskCount = tasks.size
 
@@ -110,14 +122,36 @@ fun TaskScheduler(viewModel: TaskSchedulerViewModel? = null) {
                     Text(
                         text = "⏰ Task Scheduler",
                         style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
+                    
+                    // 类别过滤
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        item {
+                            FilterChip(
+                                selected = selectedCategory == null,
+                                onClick = { viewModel?.setFilterCategory(null) },
+                                label = { Text("全部") }
+                            )
+                        }
+                        items(TaskCategory.values()) { category ->
+                            FilterChip(
+                                selected = selectedCategory == category,
+                                onClick = { viewModel?.setFilterCategory(category) },
+                                label = { Text(category.displayName) }
+                            )
+                        }
+                    }
                 }
 
                 items(tasks, key = { it.id }) { task ->
                     TaskItemRow(
                         task = task,
                         onStatusChange = { viewModel?.toggleTaskStatus(task) },
+                        onLockToggle = { viewModel?.toggleTaskLock(task) },
                         onDelete = { viewModel?.deleteTask(task) },
                         onEdit = {
                             editingTask.value = task
@@ -167,8 +201,8 @@ fun TaskScheduler(viewModel: TaskSchedulerViewModel? = null) {
     if (showAddDialog.value) {
         AddTaskDialog(
             onDismiss = { showAddDialog.value = false },
-            onConfirm = { time, name ->
-                viewModel?.addTask(time, name, true)
+            onConfirm = { time, name, importance, category ->
+                viewModel?.addTask(time, name, true, importance, false, category)
                 showAddDialog.value = false
             }
         )
@@ -181,12 +215,15 @@ fun TaskScheduler(viewModel: TaskSchedulerViewModel? = null) {
             initialTime = newTaskTime.value,
             initialName = newTaskName.value,
             onDismiss = { showEditDialog.value = false },
-            onConfirm = { time, name ->
+            onConfirm = { time, name, importance, category ->
                 viewModel?.updateTask(
                     editingTask.value!!.id,
                     time,
                     name,
-                    editingTask.value!!.isActive
+                    editingTask.value!!.isActive,
+                    importance,
+                    editingTask.value!!.isLocked,
+                    category
                 )
                 showEditDialog.value = false
             }
@@ -198,77 +235,108 @@ fun TaskScheduler(viewModel: TaskSchedulerViewModel? = null) {
 fun TaskItemRow(
     task: TaskEntity,
     onStatusChange: () -> Unit = {},
+    onLockToggle: () -> Unit = {},
     onDelete: () -> Unit = {},
     onEdit: () -> Unit = {}
 ) {
-    Box(
-        modifier = Modifier.Companion
+    val backgroundColor = when (task.importance) {
+        TaskImportance.IMPORTANT -> Color(0xFF4D2C2C)
+        else -> DashboardColors.CardBackground
+    }
+
+    Card(
+        modifier = Modifier
             .fillMaxWidth()
-            .background(
-                color = Color(0xFF1A1A1A),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-            )
-            .padding(12.dp)
-            .padding(bottom = 8.dp)
+            .padding(bottom = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = BorderStroke(
+            1.dp,
+            if (task.importance == TaskImportance.IMPORTANT) Color(0xFFFF4444) else DashboardColors.BorderColor
+        ),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Row(
-            modifier = Modifier.Companion.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Companion.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
-                verticalAlignment = Alignment.Companion.CenterVertically,
-                modifier = Modifier.Companion.weight(1f)
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "⏱",
+                    text = if (task.importance == TaskImportance.IMPORTANT) "🔥" else "⏱",
                     fontSize = 16.sp,
-                    color = Color(0xFF9966FF),
-                    modifier = Modifier.Companion.padding(end = 8.dp)
+                    color = if (task.importance == TaskImportance.IMPORTANT) Color.Red else Color(
+                        0xFF9966FF
+                    ),
+                    modifier = Modifier.padding(end = 8.dp)
                 )
                 Column {
                     Text(text = task.time, fontSize = 12.sp, color = DashboardColors.TextSecondary)
                     Text(
                         text = task.name,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Companion.Bold,
+                        fontWeight = FontWeight.Bold,
                         color = DashboardColors.TextPrimary
+                    )
+                    Text(
+                        text = " · ${task.category.displayName}",
+                        fontSize = 11.sp,
+                        color = DashboardColors.AccentGreen.copy(alpha = 0.7f)
                     )
                 }
             }
             Row(
-                verticalAlignment = Alignment.Companion.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // 编辑按鑵
+                // 锁定按钮（始终显示）
                 IconButton(
-                    onClick = onEdit,
-                    modifier = Modifier.Companion.scale(0.8f)
+                    onClick = onLockToggle,
+                    modifier = Modifier.scale(0.8f)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Edit,
-                        contentDescription = "Edit Task",
-                        tint = Color(0xFF9966FF)
+                        imageVector = if (task.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = "Toggle Lock",
+                        tint = if (task.isLocked) Color.Red else DashboardColors.AccentGreen
                     )
                 }
 
-                // 删除按鑵
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.Companion.scale(0.8f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = "Delete Task",
-                        tint = Color(0xFFFF6B6B)
-                    )
+                if (!task.isLocked) {
+                    // 编辑按钮
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.scale(0.8f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = "Edit Task",
+                            tint = Color(0xFF9966FF)
+                        )
+                    }
+
+                    // 删除按钮
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.scale(0.8f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Delete Task",
+                            tint = Color(0xFFFF6B6B)
+                        )
+                    }
                 }
 
-                // 切换挡
+                // 切换按钮
                 Switch(
                     checked = task.isActive,
                     onCheckedChange = { onStatusChange() },
-                    modifier = Modifier.Companion.scale(0.8f)
+                    modifier = Modifier.scale(0.8f),
+                    enabled = !task.isLocked
                 )
             }
         }
@@ -279,13 +347,16 @@ fun TaskItemRow(
 @Composable
 fun AddTaskDialog(
     onDismiss: () -> Unit,
-    onConfirm: (time: String, name: String) -> Unit
+    onConfirm: (time: String, name: String, importance: TaskImportance, category: TaskCategory) -> Unit
 ) {
     val name = remember { mutableStateOf("") }
+    val importance = remember { mutableStateOf(TaskImportance.NORMAL) }
+    val category = remember { mutableStateOf(TaskCategory.LIFE) }
+    val isCategoryExpanded = remember { mutableStateOf(false) }
     val timePickerState = rememberTimePickerState(
         initialHour = 8,
         initialMinute = 0,
-        is24Hour = false
+        is24Hour = true
     )
 
     AlertDialog(
@@ -300,7 +371,7 @@ fun AddTaskDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 滑动选择时间
-                TimePicker(state = timePickerState)
+                TimeInput(state = timePickerState)
 
                 TextField(
                     value = name.value,
@@ -308,6 +379,51 @@ fun AddTaskDialog(
                     label = { Text("Task Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "Importance", style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = importance.value == TaskImportance.NORMAL,
+                            onClick = { importance.value = TaskImportance.NORMAL }
+                        )
+                        Text(text = "Normal")
+                        Spacer(modifier = Modifier.padding(start = 8.dp))
+                        RadioButton(
+                            selected = importance.value == TaskImportance.IMPORTANT,
+                            onClick = { importance.value = TaskImportance.IMPORTANT }
+                        )
+                        Text(text = "Important")
+                    }
+                }
+
+                // 类别选择
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "Category", style = MaterialTheme.typography.bodyMedium)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { isCategoryExpanded.value = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = category.value.displayName)
+                        }
+                        DropdownMenu(
+                            expanded = isCategoryExpanded.value,
+                            onDismissRequest = { isCategoryExpanded.value = false },
+                            modifier = Modifier.fillMaxWidth(0.7f)
+                        ) {
+                            TaskCategory.values().forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.displayName) },
+                                    onClick = {
+                                        category.value = cat
+                                        isCategoryExpanded.value = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -315,7 +431,7 @@ fun AddTaskDialog(
                 onClick = {
                     if (name.value.isNotEmpty()) {
                         val formattedTime = formatTime(timePickerState.hour, timePickerState.minute)
-                        onConfirm(formattedTime, name.value)
+                        onConfirm(formattedTime, name.value, importance.value, category.value)
                     }
                 }
             ) {
@@ -337,9 +453,12 @@ fun EditTaskDialog(
     initialTime: String,
     initialName: String,
     onDismiss: () -> Unit,
-    onConfirm: (time: String, name: String) -> Unit
+    onConfirm: (time: String, name: String, importance: TaskImportance, category: TaskCategory) -> Unit
 ) {
     val name = remember { mutableStateOf(initialName) }
+    val importance = remember { mutableStateOf(task.importance) }
+    val category = remember { mutableStateOf(task.category) }
+    val isCategoryExpanded = remember { mutableStateOf(false) }
     val (parsedHour, parsedMinute) = remember(initialTime) { parseTime(initialTime) }
     val timePickerState = rememberTimePickerState(
         initialHour = parsedHour,
@@ -367,6 +486,51 @@ fun EditTaskDialog(
                     label = { Text("Task Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "Importance", style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = importance.value == TaskImportance.NORMAL,
+                            onClick = { importance.value = TaskImportance.NORMAL }
+                        )
+                        Text(text = "Normal")
+                        Spacer(modifier = Modifier.padding(start = 8.dp))
+                        RadioButton(
+                            selected = importance.value == TaskImportance.IMPORTANT,
+                            onClick = { importance.value = TaskImportance.IMPORTANT }
+                        )
+                        Text(text = "Important")
+                    }
+                }
+
+                // 类别选择
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = "Category", style = MaterialTheme.typography.bodyMedium)
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { isCategoryExpanded.value = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(text = category.value.displayName)
+                        }
+                        DropdownMenu(
+                            expanded = isCategoryExpanded.value,
+                            onDismissRequest = { isCategoryExpanded.value = false },
+                            modifier = Modifier.fillMaxWidth(0.7f)
+                        ) {
+                            TaskCategory.values().forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(cat.displayName) },
+                                    onClick = {
+                                        category.value = cat
+                                        isCategoryExpanded.value = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
@@ -374,7 +538,7 @@ fun EditTaskDialog(
                 onClick = {
                     if (name.value.isNotEmpty()) {
                         val formattedTime = formatTime(timePickerState.hour, timePickerState.minute)
-                        onConfirm(formattedTime, name.value)
+                        onConfirm(formattedTime, name.value, importance.value, category.value)
                     }
                 }
             ) {
