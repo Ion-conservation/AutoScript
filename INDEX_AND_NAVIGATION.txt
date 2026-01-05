@@ -1,0 +1,359 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                   通知系统实现 - 文件索引和快速导航                         ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+【📂 项目结构】
+
+learn-kotlin/
+├── app/src/main/kotlin/auto/script/
+│   ├── common/
+│   │   └── ✨ NotificationService.kt ..................... 通用通知服务
+│   │       │ - 193 行
+│   │       │ - NotificationService 对象
+│   │       │ - 3 种通知类型
+│   │       │ - 5 个主要方法
+│   │       │ - 完整的 JavaDoc 注释
+│   │       └ 支持 Android 6.0 - 14.0+
+│   │
+│   └── feature/scheduler/
+│       ├── ✨ TaskSchedulerViewModel.kt .............. 任务监视功能 (修改)
+│       │   │ - 新增 +96 行
+│       │   │ - startTaskMonitoring() 方法
+│       │   │ - stopTaskMonitoring() 方法
+│       │   │ - applicationContext 属性
+│       │   │ - 后台协程监视
+│       │   └ 每分钟检查一次任务
+│       │
+│       └── ✨ NotificationUsageExample.kt ........... 使用示例
+│           │ - 225 行
+│           │ - 5 个实际场景示例
+│           │ - Composable 集成示例
+│           │ - Application 初始化示例
+│           └ 与其他模块集成示例
+│
+├── 📄 NOTIFICATION_INTEGRATION_GUIDE.txt ........ 集成指南 (详细)
+│   │ - 302 行
+│   │ - 快速开始步骤
+│   │ - 完整 API 文档
+│   │ - 通知类型说明
+│   │ - 任务监视工作原理
+│   │ - 权限配置说明
+│   │ - 常见问题解答
+│   └ 与现有系统的关系
+│
+├── 📄 IMPLEMENTATION_SUMMARY.txt ...................... 实现总结 (概要)
+│   │ - 302 行
+│   │ - 需求完成情况
+│   │ - 核心功能说明
+│   │ - 文件清单统计
+│   │ - 技术亮点总结
+│   │ - 性能考虑说明
+│   │ - 未来改进方向
+│   └ 总结和快速集成
+│
+├── 📄 API_QUICK_REFERENCE.txt ........................ API 快速参考 (速查)
+│   │ - 258 行
+│   │ - NotificationService 核心 API
+│   │ - TaskSchedulerViewModel 核心 API
+│   │ - 通知类型一览表
+│   │ - 常用代码模板
+│   │ - 工作流程示例
+│   │ - 导入语句
+│   │ - 常见用途对比
+│   └ 问题排查指南
+│
+├── 📄 IMPLEMENTATION_CHECKLIST.txt ................. 完成检查清单 (验证)
+│   │ - 267 行
+│   │ - 需求完成情况清单
+│   │ - 代码质量检查清单
+│   │ - 文件创建验证清单
+│   │ - 功能验证检查清单
+│   │ - 集成点检查清单
+│   │ - 部署就绪检查清单
+│   └ 实现统计数据
+│
+├── 📄 README_NOTIFICATION_SYSTEM.txt ............... 总览文档 (首选)
+│   │ - 384 行
+│   │ - 实现概述
+│   │ - 核心组件详解
+│   │ - 集成方法 (2 种)
+│   │ - 使用流程示例
+│   │ - API 快速参考
+│   │ - 技术亮点总结
+│   │ - 测试检查清单
+│   │ - 重要提示和注意事项
+│   │ - 常见问题解答
+│   │ - 下一步建议
+│   └ 相关文档导航
+│
+└── 📄 INDEX_AND_NAVIGATION.txt ..................... 本文件 (导航)
+    - 完整的文件索引
+    - 快速导航指南
+    - 使用场景对应表
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【🎯 快速导航指南】
+
+我想要... 应该查看：
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我是新手，想要快速了解系统                                   │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  先看: README_NOTIFICATION_SYSTEM.txt                   │
+│ 2️⃣  再看: API_QUICK_REFERENCE.txt 的"常用代码模板"         │
+│ 3️⃣  最后: NotificationUsageExample.kt 的实际示例            │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我想要集成通知系统到我的项目                                  │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: NOTIFICATION_INTEGRATION_GUIDE.txt 的"快速开始"  │
+│ 2️⃣  查看: README_NOTIFICATION_SYSTEM.txt 的"集成方法"      │
+│ 3️⃣  参考: NotificationUsageExample.kt 的集成示例            │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我需要查询 NotificationService 的所有 API                   │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: API_QUICK_REFERENCE.txt 的"NotificationService"│
+│ 2️⃣  查看: NotificationService.kt 的源代码注释               │
+│ 3️⃣  查看: NOTIFICATION_INTEGRATION_GUIDE.txt 的"完整 API" │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我需要查询 TaskSchedulerViewModel 的 API                    │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: API_QUICK_REFERENCE.txt 的"TaskSchedulerViewModel"│
+│ 2️⃣  查看: TaskSchedulerViewModel.kt 的源代码注释             │
+│ 3️⃣  查看: README_NOTIFICATION_SYSTEM.txt 的"API 快速参考" │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我有 bug，需要故障排查                                       │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: API_QUICK_REFERENCE.txt 的"问题排查"             │
+│ 2️⃣  查看: README_NOTIFICATION_SYSTEM.txt 的"常见问题"      │
+│ 3️⃣  查看: NOTIFICATION_INTEGRATION_GUIDE.txt 的"常见问题"  │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我想要查看完整的源代码和实现细节                              │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: NotificationService.kt (193 行，完整注释)        │
+│ 2️⃣  查看: TaskSchedulerViewModel.kt (161 行，新增部分)      │
+│ 3️⃣  查看: IMPLEMENTATION_SUMMARY.txt 的"技术亮点"           │
+╰─────────────────────────────────────────────────────────────╯
+
+╭─────────────────────────────────────────────────────────────╮
+│ 我想要验证实现的完整性                                       │
+├─────────────────────────────────────────────────────────────┤
+│ 1️⃣  查看: IMPLEMENTATION_CHECKLIST.txt (完整检查清单)       │
+│ 2️⃣  查看: IMPLEMENTATION_SUMMARY.txt 的"实现统计"           │
+│ 3️⃣  查看: README_NOTIFICATION_SYSTEM.txt 的"性能指标"      │
+╰─────────────────────────────────────────────────────────────╯
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【📋 文档对应表】
+
+使用场景                   → 推荐阅读文档
+─────────────────────────────────────────────────────────────
+🚀 快速开始                 → README_NOTIFICATION_SYSTEM.txt
+📚 完整集成指南             → NOTIFICATION_INTEGRATION_GUIDE.txt
+🔍 API 快速查询             → API_QUICK_REFERENCE.txt
+✅ 验证实现完整性            → IMPLEMENTATION_CHECKLIST.txt
+📖 了解技术细节             → IMPLEMENTATION_SUMMARY.txt
+💻 查看代码示例             → NotificationUsageExample.kt
+🔧 源代码实现               → NotificationService.kt
+🛠️  修改日志                 → TaskSchedulerViewModel.kt
+🆘 故障排查                 → API_QUICK_REFERENCE.txt + README
+❓ 常见问题                 → README_NOTIFICATION_SYSTEM.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【🔗 文件间的关系】
+
+                    ┌─────────────────────────┐
+                    │  README_NOTIFICATION    │ ← 📍 从这里开始
+                    │  SYSTEM.txt             │
+                    │ (384 行，完整概览)       │
+                    └────────┬────────────────┘
+                             │
+                 ┌───────────┼───────────┐
+                 ▼           ▼           ▼
+        ┌─────────────┐  ┌──────────────┐  ┌─────────────┐
+        │   API_QUICK │  │ NOTIFICATION │  │IMPLEMENTATION
+        │ _REFERENCE  │  │_INTEGRATION  │  │ _SUMMARY
+        │   (258行)   │  │_GUIDE(302行) │  │  (302行)
+        └────┬────────┘  └──────┬───────┘  └─────┬───────┘
+             │                  │               │
+             │                  └────────┬──────┘
+             │                           ▼
+             │                  ┌─────────────────┐
+             └─────────────────→│ IMPLEMENTATION  │
+                                │  _CHECKLIST     │
+                                │  (267 行)       │
+                                └─────────────────┘
+
+                    NotificationService.kt
+                           ↑
+                           │ 引用
+                           │
+    TaskSchedulerViewModel.kt ← NotificationUsageExample.kt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【📊 文档统计】
+
+文件                              行数    用途
+─────────────────────────────────────────────────────────────
+README_NOTIFICATION_SYSTEM.txt    384     总览和快速开始
+NOTIFICATION_INTEGRATION_GUIDE    302     详细集成指南
+IMPLEMENTATION_SUMMARY.txt        302     实现细节总结
+API_QUICK_REFERENCE.txt          258     API 快速查询
+IMPLEMENTATION_CHECKLIST.txt     267     完成情况验证
+NotificationUsageExample.kt      225     代码使用示例
+NotificationService.kt           193     核心实现代码
+TaskSchedulerViewModel.kt        +96     功能扩展
+
+总计: 2,227 行代码和文档
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【🎓 学习路径】
+
+初级开发者 (3-5 分钟):
+1️⃣  README_NOTIFICATION_SYSTEM.txt 的"实现概述"和"集成方法"
+2️⃣  API_QUICK_REFERENCE.txt 的"常用代码模板"
+3️⃣  现在你可以: 快速发送通知和启用任务监视
+
+中级开发者 (20-30 分钟):
+1️⃣  完整阅读 README_NOTIFICATION_SYSTEM.txt
+2️⃣  阅读 NOTIFICATION_INTEGRATION_GUIDE.txt
+3️⃣  查看 NotificationUsageExample.kt 的所有示例
+4️⃣  现在你可以: 完整集成和自定义通知系统
+
+高级开发者 (1-2 小时):
+1️⃣  研究 NotificationService.kt 的源代码
+2️⃣  分析 TaskSchedulerViewModel.kt 的修改
+3️⃣  理解 IMPLEMENTATION_SUMMARY.txt 的技术细节
+4️⃣  修改和扩展系统功能
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【🚀 五分钟快速开始】
+
+Step 1: 理解核心概念 (1 分钟)
+─────────────────────────────────────
+阅读 README_NOTIFICATION_SYSTEM.txt 的"实现概述"部分
+
+Step 2: 查看 API 文档 (1 分钟)
+─────────────────────────────────────
+查看 API_QUICK_REFERENCE.txt 的"NotificationService 核心 API"
+
+Step 3: 复制集成代码 (1 分钟)
+─────────────────────────────────────
+从 NotificationUsageExample.kt 复制 setupTaskSchedulerViewModel() 函数
+
+Step 4: 粘贴到你的 MainActivity (1 分钟)
+─────────────────────────────────────
+在 onCreate() 中调用:
+  viewModel.applicationContext = this
+  viewModel.startTaskMonitoring()
+
+Step 5: 测试通知功能 (1 分钟)
+─────────────────────────────────────
+从 NotificationUsageExample.kt 复制 exampleDirectNotification() 函数
+运行即可看到通知效果
+
+完成！现在你已经可以使用通知系统了。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【📞 文件位置速查】
+
+我需要...                        文件位置
+─────────────────────────────────────────────────────────────
+发送通知                         NotificationService.kt
+监视任务                         TaskSchedulerViewModel.kt
+查看使用示例                     NotificationUsageExample.kt
+了解集成步骤                     NOTIFICATION_INTEGRATION_GUIDE.txt
+快速查询 API                     API_QUICK_REFERENCE.txt
+验证实现完整性                   IMPLEMENTATION_CHECKLIST.txt
+了解技术细节                     IMPLEMENTATION_SUMMARY.txt
+获得总体了解                     README_NOTIFICATION_SYSTEM.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【⚡ 常用操作速查】
+
+操作                             相关文件/段落
+─────────────────────────────────────────────────────────────
+发送任务通知                     API_QUICK_REFERENCE.txt: 2️⃣
+发送错误通知                     API_QUICK_REFERENCE.txt: 3️⃣
+启动任务监视                     API_QUICK_REFERENCE.txt: 1️⃣
+停止任务监视                     API_QUICK_REFERENCE.txt: 2️⃣
+在 MainActivity 集成             README_NOTIFICATION_SYSTEM.txt
+在其他模块中使用                 README_NOTIFICATION_SYSTEM.txt
+解决通知问题                     API_QUICK_REFERENCE.txt: 问题排查
+解决任务问题                     README_NOTIFICATION_SYSTEM.txt: 常见问题
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【🎯 按需求导航】
+
+需求                                     → 推荐阅读顺序
+─────────────────────────────────────────────────────────────
+我想快速发送一条通知                      → API_QUICK_REFERENCE.txt (2️⃣)
+我想设置任务自动提醒                      → README_NOTIFICATION_SYSTEM.txt
+我想完整了解系统设计                      → IMPLEMENTATION_SUMMARY.txt
+我想集成到现有项目                        → NOTIFICATION_INTEGRATION_GUIDE.txt
+我想查看所有可用 API                      → API_QUICK_REFERENCE.txt
+我想验证代码质量                          → IMPLEMENTATION_CHECKLIST.txt
+我想学习源代码实现                        → NotificationService.kt
+我想查看集成示例                          → NotificationUsageExample.kt
+我想故障排查                              → README_NOTIFICATION_SYSTEM.txt (常见问题)
+我想深入研究技术细节                      → IMPLEMENTATION_SUMMARY.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【💡 提示】
+
+✨ 最快的学习方式
+   1. 先看 README_NOTIFICATION_SYSTEM.txt (5-10 分钟)
+   2. 查看 API_QUICK_REFERENCE.txt 快速参考 (3-5 分钟)
+   3. 复制代码示例快速集成 (2-5 分钟)
+   4. 根据需要查看其他文档 (按需)
+
+✨ 最详细的学习方式
+   按照文档的"学习路径"部分进行，分为初级/中级/高级三个阶段
+
+✨ 最有效的问题解决方式
+   1. 先查 README_NOTIFICATION_SYSTEM.txt 的常见问题
+   2. 再查 API_QUICK_REFERENCE.txt 的问题排查
+   3. 最后查 NOTIFICATION_INTEGRATION_GUIDE.txt 的详细说明
+
+✨ 遇到编译错误？
+   通常是导入问题，检查是否添加了:
+   import auto.script.common.NotificationService
+   import auto.script.feature.scheduler.TaskSchedulerViewModel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║  🎯 推荐阅读顺序:                                                        ║
+║                                                                           ║
+║  1️⃣  本文件 (你已在这里) → 了解文件结构和快速导航                       ║
+║  2️⃣  README_NOTIFICATION_SYSTEM.txt → 整体了解系统                      ║
+║  3️⃣  API_QUICK_REFERENCE.txt → 查询具体 API 用法                        ║
+║  4️⃣  NotificationUsageExample.kt → 查看代码示例                         ║
+║  5️⃣  其他文档 → 根据需要深入了解                                        ║
+║                                                                           ║
+║  ⏱️  预计阅读时间: 15-30 分钟                                            ║
+║  📝 预计集成时间: 5-10 分钟                                             ║
+║                                                                           ║
+║  准备好了吗？从 README_NOTIFICATION_SYSTEM.txt 开始吧！ 🚀              ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝

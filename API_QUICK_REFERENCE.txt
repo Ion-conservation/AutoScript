@@ -1,0 +1,257 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║               通知系统 API 快速参考卡                                       ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+【NotificationService 核心 API】
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  发送通用通知
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NotificationService.showNotification(
+    context: Context,                               // 应用上下文 (必需)
+    title: String,                                  // 标题 (必需)
+    text: String,                                   // 内容 (必需)
+    type: NotificationType = DEFAULT,              // 通知类型 (可选)
+    largeText: String? = null,                     // 长文本 (可选)
+    autoCancel: Boolean = true                     // 点击后消失 (可选)
+)
+
+示例:
+NotificationService.showNotification(
+    context = context,
+    title = "我的标题",
+    text = "通知内容",
+    type = NotificationService.NotificationType.TASK,
+    largeText = "详细信息可以很长很长..."
+)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2️⃣  发送任务通知 (快捷方法)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NotificationService.showTaskNotification(
+    context: Context,                               // 应用上下文 (必需)
+    taskName: String,                               // 任务名称 (必需)
+    message: String = "时间到了，立即执行任务！"    // 提醒消息 (可选)
+)
+
+示例:
+NotificationService.showTaskNotification(
+    context = context,
+    taskName = "我的任务",
+    message = "现在该执行了"
+)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3️⃣  发送错误通知 (快捷方法)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NotificationService.showErrorNotification(
+    context: Context,                               // 应用上下文 (必需)
+    errorTitle: String,                             // 错误标题 (必需)
+    errorMessage: String                            // 错误消息 (必需)
+)
+
+示例:
+NotificationService.showErrorNotification(
+    context = context,
+    errorTitle = "执行失败",
+    errorMessage = "脚本在第 5 步失败"
+)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4️⃣  取消通知
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 取消特定类型的通知
+NotificationService.cancelNotification(
+    context: Context,
+    type: NotificationService.NotificationType.TASK
+)
+
+// 取消所有通知
+NotificationService.cancelAllNotifications(context)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【TaskSchedulerViewModel 核心 API】
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1️⃣  启动任务监视器
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+viewModel.applicationContext = context  // 先设置上下文
+viewModel.startTaskMonitoring()         // 再启动监视
+
+效果: 每分钟检查一次活跃任务，到时间时自动发送通知
+
+建议位置: MainActivity.onCreate() 或 Application.onCreate()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2️⃣  停止任务监视器
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+viewModel.stopTaskMonitoring()
+
+建议位置: MainActivity.onDestroy() 或应用后台时
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【通知类型 (NotificationType)】
+
+┌─────────────┬──────────────┬──────────┬───────────────┐
+│ 类型        │ 通知渠道     │ 优先级   │ ID            │
+├─────────────┼──────────────┼──────────┼───────────────┤
+│ DEFAULT     │ 默认通知     │ NORMAL   │ 1001          │
+│ TASK        │ 任务提醒     │ HIGH     │ 1002          │
+│ ERROR       │ 错误提醒     │ HIGH     │ 1003          │
+└─────────────┴──────────────┴──────────┴───────────────┘
+
+使用: NotificationService.NotificationType.TASK
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【常用代码模板】
+
+模板 1: 在 Activity 中启用任务通知
+
+class MainActivity : AppCompatActivity() {
+    private val viewModel: TaskSchedulerViewModel by viewModels()
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // 启动任务监视器
+        viewModel.applicationContext = this
+        viewModel.startTaskMonitoring()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.stopTaskMonitoring()
+    }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+模板 2: 在任何地方发送通知
+
+// 发送任务通知
+NotificationService.showTaskNotification(
+    context = context,
+    taskName = "我的任务名"
+)
+
+// 发送错误通知
+NotificationService.showErrorNotification(
+    context = context,
+    errorTitle = "错误类型",
+    errorMessage = "具体错误信息"
+)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+模板 3: 创建并设置任务
+
+viewModel.addTask(
+    time = "08:00 AM",
+    name = "早间签到",
+    isActive = true
+)
+
+// 启动监视后，系统会在 08:00 AM 时自动发送通知
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【工作流程示例】
+
+用户流程:
+  1. 用户在 UI 中创建任务 (例如: "08:00 AM 早间打卡")
+  2. 任务保存到数据库
+  3. App 启动时调用 startTaskMonitoring()
+  4. 监视器每分钟检查一次任务
+  5. 当时间到达 08:00 时:
+     a. 监视器检测到时间匹配
+     b. 调用 sendTaskNotification(task)
+     c. 发送通知到状态栏
+  6. 用户收到通知提醒
+
+代码流程:
+  startTaskMonitoring()
+    ├── 启动 while 循环 (在 viewModelScope)
+    ├── 每次迭代 (60 秒间隔):
+    │   ├── 获取当前任务列表
+    │   ├── 获取当前时间
+    │   ├── for 循环遍历任务:
+    │   │   ├── 如果任务活跃:
+    │   │   │   ├── 解析任务时间
+    │   │   │   └── 对比当前时间
+    │   │   │       └── 如果匹配: 发送通知
+    │   └── 延迟 60 秒
+    └── 直到 stopTaskMonitoring() 被调用
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【导入语句】
+
+// 在文件顶部添加
+import auto.script.common.NotificationService
+import auto.script.feature.scheduler.TaskSchedulerViewModel
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【常见用途对比】
+
+使用场景                    推荐方法
+─────────────────────────────────────────────────────────────
+发送简单通知                showTaskNotification()
+发送错误通知                showErrorNotification()
+发送自定义通知              showNotification()
+自动任务提醒                startTaskMonitoring()
+立即发送任务通知            showTaskNotification()
+定期检查任务                startTaskMonitoring()
+处理异常提醒                showErrorNotification()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【问题排查】
+
+❌ 通知没有显示
+  ✓ 检查是否设置了正确的 Context
+  ✓ 检查 Android 版本是否 >= 6.0
+  ✓ 确认应用有 POST_NOTIFICATIONS 权限
+  ✓ 检查通知是否被系统禁用
+
+❌ 任务监视器没有工作
+  ✓ 确认调用了 startTaskMonitoring()
+  ✓ 确认设置了 applicationContext
+  ✓ 确认任务是否设置为活跃 (isActive = true)
+  ✓ 检查时间格式是否正确 ("HH:MM AM/PM")
+
+❌ 通知重复显示
+  ✓ 每种通知类型只能同时显示一条
+  ✓ 新通知会覆盖旧通知
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【更多信息】
+
+详细文档: NOTIFICATION_INTEGRATION_GUIDE.txt
+使用示例: NotificationUsageExample.kt
+源代码:   NotificationService.kt
+         TaskSchedulerViewModel.kt
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                          快速开始三步走                                    ║
+║                                                                           ║
+║ 1️⃣  在 MainActivity 中启动监视:                                          ║
+║     viewModel.applicationContext = this                                   ║
+║     viewModel.startTaskMonitoring()                                       ║
+║                                                                           ║
+║ 2️⃣  用户创建任务:                                                        ║
+║     viewModel.addTask("08:00 AM", "早间签到", true)                      ║
+║                                                                           ║
+║ 3️⃣  等待! 时间到时系统自动发送通知                                      ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝

@@ -3,9 +3,11 @@ package auto.script.activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import auto.script.feature.scheduler.InitTaskDatabase
+import auto.script.feature.scheduler.TaskSchedulerViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,9 +17,14 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
 
+    private val taskSchedulerViewModel: TaskSchedulerViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 初始化任务调度通知功能
+        taskSchedulerViewModel.applicationContext = this
+        taskSchedulerViewModel.startTaskMonitoring()
 
         setContent {
             MyApp()
@@ -32,6 +39,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // 停止任务监视器
+        taskSchedulerViewModel.stopTaskMonitoring()
     }
 
 

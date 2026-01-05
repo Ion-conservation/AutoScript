@@ -1,0 +1,301 @@
+======================== 通知系统与任务监视器集成指南 ========================
+
+本指南说明如何在 AutoScript 项目中集成新的通知系统和任务监视功能。
+
+======================== 概述 ========================
+
+新增了两个主要组件：
+
+1. NotificationService (D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\common\NotificationService.kt)
+   - 通用的状态栏通知服务
+   - 提供统一的通知接口，支持多种通知类型和优先级
+   - 支持 Android 8.0+ 的通知渠道管理
+
+2. TaskSchedulerViewModel 扩展 (D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\feature\scheduler\TaskSchedulerViewModel.kt)
+   - 新增任务时间监视功能
+   - 当任务达到设定时间时自动发送通知
+   - 支持启动/停止监视器
+
+======================== 快速开始 ========================
+
+步骤 1: 直接使用 NotificationService 发送通知
+-------
+
+// 发送任务通知
+NotificationService.showTaskNotification(
+    context = context,
+    taskName = "我的任务",
+    message = "时间已到"
+)
+
+// 发送错误通知
+NotificationService.showErrorNotification(
+    context = context,
+    errorTitle = "错误",
+    errorMessage = "出错了"
+)
+
+// 发送自定义通知
+NotificationService.showNotification(
+    context = context,
+    title = "标题",
+    text = "内容",
+    type = NotificationService.NotificationType.TASK
+)
+
+
+步骤 2: 在 Activity/Application 中启动任务监视器
+-------
+
+class MainActivity : AppCompatActivity() {
+    private val viewModel: TaskSchedulerViewModel by viewModels()
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // 设置上下文并启动任务监视器
+        viewModel.applicationContext = this
+        viewModel.startTaskMonitoring()  // 启动监视
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.stopTaskMonitoring()  // 停止监视
+    }
+}
+
+
+步骤 3: 在其他模块中调用通知接口
+-------
+
+// 在 NeteaseExecutor 或其他模块中
+fun someMethod(context: Context) {
+    NotificationService.showTaskNotification(
+        context = context,
+        taskName = "网易云自动化",
+        message = "脚本执行完成"
+    )
+}
+
+======================== NotificationService API ========================
+
+主要方法：
+
+1. showNotification()
+   参数:
+   - context: Context - 应用上下文
+   - title: String - 通知标题
+   - text: String - 通知内容
+   - type: NotificationType - 通知类型（默认 DEFAULT）
+   - largeText: String? - 长文本内容（可选）
+   - autoCancel: Boolean - 点击后是否自动消失（默认 true）
+   
+   示例:
+   NotificationService.showNotification(
+       context = context,
+       title = "标题",
+       text = "内容",
+       type = NotificationService.NotificationType.TASK,
+       largeText = "详细信息...",
+       autoCancel = true
+   )
+
+2. showTaskNotification()
+   参数:
+   - context: Context - 应用上下文
+   - taskName: String - 任务名称
+   - message: String - 提醒消息
+   
+   示例:
+   NotificationService.showTaskNotification(
+       context = context,
+       taskName = "任务名",
+       message = "时间已到"
+   )
+
+3. showErrorNotification()
+   参数:
+   - context: Context - 应用上下文
+   - errorTitle: String - 错误标题
+   - errorMessage: String - 错误消息
+   
+   示例:
+   NotificationService.showErrorNotification(
+       context = context,
+       errorTitle = "执行错误",
+       errorMessage = "脚本执行失败"
+   )
+
+4. cancelNotification()
+   取消指定类型的通知
+   
+   示例:
+   NotificationService.cancelNotification(
+       context = context,
+       type = NotificationService.NotificationType.TASK
+   )
+
+5. cancelAllNotifications()
+   取消所有通知
+   
+   示例:
+   NotificationService.cancelAllNotifications(context)
+
+======================== TaskSchedulerViewModel API ========================
+
+新增方法：
+
+1. startTaskMonitoring()
+   启动任务监视器，每分钟检查一次活跃任务
+   - 必须先设置 applicationContext 属性
+   - 任务到达时间时自动发送通知
+   
+   示例:
+   viewModel.applicationContext = context
+   viewModel.startTaskMonitoring()
+
+2. stopTaskMonitoring()
+   停止任务监视器
+   
+   示例:
+   viewModel.stopTaskMonitoring()
+
+3. applicationContext 属性
+   用于发送通知的应用上下文
+   
+   示例:
+   viewModel.applicationContext = this  // Activity 或 Application context
+
+======================== 通知类型说明 ========================
+
+NotificationType 枚举提供三种通知类型：
+
+1. DEFAULT - 默认通知
+   - 渠道名: "默认通知"
+   - 优先级: NORMAL
+   - ID: 1001
+   - 用途: 普通信息通知
+
+2. TASK - 任务提醒
+   - 渠道名: "任务提醒"
+   - 优先级: HIGH
+   - ID: 1002
+   - 用途: 任务执行提醒
+
+3. ERROR - 错误提醒
+   - 渠道名: "错误提醒"
+   - 优先级: HIGH
+   - ID: 1003
+   - 用途: 错误和异常提醒
+
+======================== 任务监视器工作原理 ========================
+
+1. startTaskMonitoring() 启动后，会在后台开启一个协程任务
+
+2. 每分钟（60秒）检查一次所有活跃任务
+
+3. 比较当前时间与任务设定时间，精确到分钟
+
+4. 时间匹配时自动调用 sendTaskNotification() 发送通知
+
+5. 如果出现异常，会发送错误通知
+
+示例流程：
+- 用户创建任务 "早上打卡" 时间设为 "08:00 AM"
+- 启动监视器后，每分钟检查一次
+- 当系统时间达到 08:00 时，自动发送通知
+- 用户看到通知提醒执行任务
+
+======================== 权限配置 ========================
+
+已在 AndroidManifest.xml 中配置的权限：
+
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+此权限在 Android 12+ 上需要通过运行时权限申请。
+
+======================== 兼容性 ========================
+
+- Android 8.0 (API 26)+: 完全支持，自动创建通知渠道
+- Android 7.x: 支持，通过 NotificationCompat 兼容
+- Android 6.x: 支持，通过 NotificationCompat 兼容
+
+======================== 日志查看 ========================
+
+任务监视器的日志输出：
+- 标签: "TaskScheduler"
+- 级别: Error（仅在异常时输出）
+
+示例:
+android.util.Log.e("TaskScheduler", "Task monitoring error", e)
+
+======================== 与现有系统的关系 ========================
+
+新增的 NotificationService 是对现有 ScriptCountdownManager 的补充：
+
+ScriptCountdownManager:
+- 用于倒计时提醒
+- 使用 AlarmManager 和 WorkManager
+- 专门处理脚本倒计时
+
+NotificationService:
+- 通用通知接口
+- 用于应用各模块的通知需求
+- 既可用于定时任务，也可用于其他场景
+
+TaskSchedulerViewModel:
+- 新增任务监视功能
+- 内部使用 NotificationService 发送通知
+- 每分钟检查一次任务时间
+
+======================== 常见问题 ========================
+
+Q: 任务监视器启动后会一直运行吗？
+A: 会的。建议在 Application 启动时启动，在应用销毁时停止。
+   也可在后台 WorkManager 中运行以保持长期监视。
+
+Q: 通知点击后会发生什么？
+A: 默认会打开应用的主界面（Launch Intent）。
+
+Q: 能否自定义通知点击事件？
+A: 当前版本不支持。可以通过修改 NotificationService 源代码来实现。
+
+Q: 多个通知类型可以同时显示吗？
+A: 可以。每种类型都有独立的通知 ID，可以同时显示多个。
+
+Q: 任务监视器的时间精度如何？
+A: 精确到分钟。系统每分钟检查一次，不能精确到秒。
+
+======================== 使用示例文件 ========================
+
+完整的使用示例请参考：
+D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\feature\scheduler\NotificationUsageExample.kt
+
+该文件包含了各种场景下的使用示例。
+
+======================== 文件列表 ========================
+
+新增文件：
+1. D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\common\NotificationService.kt
+   - 通用通知服务
+
+2. D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\feature\scheduler\NotificationUsageExample.kt
+   - 使用示例
+
+3. D:\Learn\learn-kotlin\NOTIFICATION_INTEGRATION_GUIDE.txt
+   - 本文件
+
+修改文件：
+1. D:\Learn\learn-kotlin\app\src\main\kotlin\auto\script\feature\scheduler\TaskSchedulerViewModel.kt
+   - 添加任务监视功能
+
+======================== 下一步 ========================
+
+1. 在 MainActivity 或 Application 中集成任务监视器
+2. 在需要发送通知的模块中导入并使用 NotificationService
+3. 测试通知功能
+4. 根据需求调整通知类型和优先级
+
+======================== 支持 ========================
+
+如有问题或需要进一步定制，请参考示例代码或源代码注释。
