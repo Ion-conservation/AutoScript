@@ -1,10 +1,11 @@
-package auto.script.feature.netease
+package auto.script.feature.netease.controller
 
 import android.util.Log
-import auto.script.A11yService.A11yServiceRepository
-import auto.script.shizuku.ShizukuBindState
-import auto.script.shizuku.ShizukuManager
-import auto.script.shizuku.ShizukuRepository
+import auto.script.core.a11y.repository.A11yServiceRepository
+import auto.script.core.shizuku.repository.ShizukuRepository
+import auto.script.core.shizuku.service.ShizukuBindState
+import auto.script.core.shizuku.service.ShizukuService
+import auto.script.feature.netease.executor.NeteaseExecutor
 import auto.script.utils.ScriptUtils
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,7 +15,7 @@ class NeteaseController @Inject constructor(
     private val executor: NeteaseExecutor,
     private val a11yServiceRepository: A11yServiceRepository,
     private val shizukuRepository: ShizukuRepository,
-    private val shizukuManager: ShizukuManager,
+    private val shizukuService: ShizukuService,
 ) {
 
     fun startAutomation() {
@@ -38,7 +39,7 @@ class NeteaseController @Inject constructor(
 
 
     fun initShizukuTool() {
-        shizukuManager.initShizukuTool()
+        shizukuService.initShizukuTool()
     }
 
 }

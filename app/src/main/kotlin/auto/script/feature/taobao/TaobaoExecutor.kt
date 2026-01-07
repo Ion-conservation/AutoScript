@@ -3,9 +3,8 @@ package auto.script.feature.taobao
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
-import auto.script.A11yService.A11yServiceTool
 import auto.script.common.EventTaskHandler
-import auto.script.gesture.GestureManager
+import auto.script.core.a11y.tool.A11yServiceTool
 import auto.script.shizuku.IUserService
 import auto.script.utils.ScriptLogger
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +65,7 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
-    private lateinit var gestureManager: GestureManager
+
     private var userService: IUserService? = null
 
     private val isRunning = AtomicBoolean(false)
@@ -388,9 +387,6 @@ class TaobaoExecutor @Inject constructor() : EventTaskHandler {
 //        }
 //    }
 //
-//    private fun initGestureManeger() {
-//        ScriptLogger.i(TAG, "初始化 GestureManeger 实例。")
-//        gestureManager = GestureManager(this)
-//    }
+
 
 }

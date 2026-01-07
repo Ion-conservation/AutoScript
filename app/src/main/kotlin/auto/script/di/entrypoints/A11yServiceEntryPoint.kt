@@ -1,7 +1,7 @@
 package auto.script.di.entrypoints
 
-import auto.script.A11yService.A11yServiceRepository
-import auto.script.A11yService.A11yServiceTool
+import auto.script.core.a11y.repository.A11yServiceRepository
+import auto.script.core.a11y.tool.A11yServiceTool
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent

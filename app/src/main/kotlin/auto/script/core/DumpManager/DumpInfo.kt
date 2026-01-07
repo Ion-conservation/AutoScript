@@ -1,6 +1,6 @@
 package auto.script.core.DumpManager
 
-import auto.script.state.NeteaseState
+import auto.script.feature.netease.common.NeteaseState
 
 
 data class DumpInfo(

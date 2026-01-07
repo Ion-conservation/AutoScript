@@ -1,16 +1,16 @@
-package auto.script.feature.netease
+package auto.script.feature.netease.executor
 
 import NodeResult
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
-import auto.script.A11yService.A11yServiceTool
 import auto.script.common.EventTaskHandler
 import auto.script.common.getCenterPoint
 import auto.script.core.DumpManager.FailReason
+import auto.script.core.a11y.tool.A11yServiceTool
+import auto.script.core.shizuku.tool.ShizukuTool
+import auto.script.feature.netease.common.NeteaseState
 import auto.script.nodetool.NodeTool
-import auto.script.shizuku.ShizukuTool
-import auto.script.state.NeteaseState
 import auto.script.utils.ScriptLogger
 import auto.script.utils.ScriptUtils
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -2,8 +2,8 @@ package auto.script.feature.scheduler
 
 import android.content.Context
 import android.util.Log
-import auto.script.feature.scheduler.db.TaskDatabase
-import auto.script.feature.scheduler.db.TaskEntity
+import auto.script.database.AppDatabase
+import auto.script.feature.scheduler.db.entity.TaskEntity
 
 object InitTaskDatabase {
     private const val PREFS_NAME = "task_db_init"
@@ -18,8 +18,8 @@ object InitTaskDatabase {
         }
 
 
-        val database = TaskDatabase.getInstance(context)
-        val dao = database.taskDao()
+        val appDatabase = AppDatabase.getInstance(context)
+        val dao = appDatabase.taskDao()
 
         // 添加示例任务
         val sampleTasks = listOf(

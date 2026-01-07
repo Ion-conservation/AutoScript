@@ -33,7 +33,7 @@
 
         <!-- ... 主入口 ... -->
         <activity
-            android:name=".activity.MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -48,7 +48,7 @@
 
         <!-- 注册无障碍服务 -->
         <service
-            android:name=".A11yService.A11yServiceManager"
+            android:name=".core.a11y.service.A11yService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:canPerformGestures="true"
             android:label="@string/appA11yServiceName"

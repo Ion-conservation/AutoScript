@@ -1,7 +1,7 @@
 package auto.script.nodetool
 
-import auto.script.A11yService.A11yServiceTool
-import auto.script.shizuku.ShizukuTool
+import auto.script.core.a11y.tool.A11yServiceTool
+import auto.script.core.shizuku.tool.ShizukuTool
 
 object NodeContext {
     lateinit var a11yServiceTool: A11yServiceTool
