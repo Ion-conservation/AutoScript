@@ -10,7 +10,7 @@ plugins {
 
 
 android {
-    namespace = "auto.script"
+    namespace = "com.yike.jarvis"
     compileSdk {
         version = release(36)
     }
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "auto.script"
+        applicationId = "com.yike.jarvis"
         minSdk = 33
         targetSdk = 36
         versionCode = 1
@@ -52,15 +52,15 @@ android {
             // 暂时使用 debug 签名，正式发布时需要配置真实签名
             signingConfig = signingConfigs.getByName("debug")
             buildConfigField("boolean", "FORCE_SHIZUKU_REAUTH", "false")
-            resValue("string", "app_name", "正式版")
-            resValue("string", "appA11yServiceName", "A 正式版")
+            resValue("string", "app_name", "JARVIS")
+            resValue("string", "appA11yServiceName", "A JARVIS")
         }
 
         create("dev") {
             // 关键：基于 debug 复制一份，再覆盖差异配置
             initWith(getByName("debug"))
 
-            // 包名后缀，区分 auto.script 与 auto.script.dev
+            // 包名后缀，区分 com.yike.jarvis 与 com.yike.jarvis.dev
             applicationIdSuffix = ".dev"
 
             // 版本名后缀，方便区分

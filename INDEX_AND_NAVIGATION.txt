@@ -336,8 +336,8 @@ Step 5: 测试通知功能 (1 分钟)
 
 ✨ 遇到编译错误？
    通常是导入问题，检查是否添加了:
-   import auto.script.common.NotificationService
-   import auto.script.feature.scheduler.TaskSchedulerViewModel
+   import com.yike.jarvis.common.NotificationService
+   import com.yike.jarvis.feature.scheduler.TaskSchedulerViewModel
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

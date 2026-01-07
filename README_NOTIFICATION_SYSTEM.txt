@@ -19,7 +19,7 @@
 
 1️⃣  NotificationService (通用通知服务)
    
-   位置: auto.script.common.NotificationService.kt
+   位置: com.yike.jarvis.common.NotificationService.kt
    大小: 193 行
    功能:
    ├─ showNotification(): 通用通知方法（支持全部自定义）
@@ -39,7 +39,7 @@
 
 2️⃣  TaskSchedulerViewModel 扩展 (任务监视功能)
    
-   位置: auto.script.feature.scheduler.TaskSchedulerViewModel.kt
+   位置: com.yike.jarvis.feature.scheduler.TaskSchedulerViewModel.kt
    修改: +96 行
    功能:
    ├─ startTaskMonitoring(): 启动任务监视器

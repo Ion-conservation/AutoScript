@@ -196,8 +196,8 @@ viewModel.addTask(
 【导入语句】
 
 // 在文件顶部添加
-import auto.script.common.NotificationService
-import auto.script.feature.scheduler.TaskSchedulerViewModel
+import com.yike.jarvis.common.NotificationService
+import com.yike.jarvis.feature.scheduler.TaskSchedulerViewModel
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

@@ -24,5 +24,5 @@ dependencyResolutionManagement {
 
 }
 
-rootProject.name = "AutoScript"
+rootProject.name = "JARVIS"
 include(":app")
