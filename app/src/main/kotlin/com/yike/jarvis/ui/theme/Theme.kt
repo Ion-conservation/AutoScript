@@ -10,31 +10,35 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// ------------------ Dashboard 深色主题色值 ------------------
+// ------------------ Iron Man 主题色值 ------------------
 object DashboardColors {
-    val Background = Color(0xFF0F0F0F)
-    val CardBackground = Color(0xFF1A1A1A)
-    val BorderColor = Color(0xFF333333)
-    val AccentGreen = Color(0xFF00FF00)
-    val AccentPink = Color(0xFFD1336B)
-    val WarningOrange = Color(0xFFFFA500)
-    val InfoBlue = Color(0xFF0099FF)
-    val TextPrimary = Color.White
-    val TextSecondary = Color(0xFF999999)
+    val Primary = Color(0xFFB71C1C)
+    val PrimaryVariant = Color(0xFF7F0000)
+    val Secondary = Color(0xFFFFD700)
+    val SecondaryVariant = Color(0xFFFFC107)
+    val Accent = Color(0xFF00E5FF)
+    val Background = Color(0xFF0D0D0D)
+    val Surface = Color(0xFF1A1A1A)
+    val Error = Color(0xFFFF5252)
+    val TextPrimary = Color(0xFFF5F5F5)
+    val TextSecondary = Color(0xFFE0E0E0)
 }
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DashboardColors.AccentGreen,
-    secondary = DashboardColors.InfoBlue,
-    tertiary = DashboardColors.AccentPink,
+    primary = DashboardColors.Primary,
+    onPrimary = Color.White,
+    primaryContainer = DashboardColors.PrimaryVariant,
+    secondary = DashboardColors.Secondary,
+    onSecondary = Color.Black,
+    secondaryContainer = DashboardColors.SecondaryVariant,
+    tertiary = DashboardColors.Accent,
+    onTertiary = Color.Black,
     background = DashboardColors.Background,
-    surface = DashboardColors.CardBackground,
-    onPrimary = Color.Black,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = DashboardColors.TextPrimary,
+    surface = DashboardColors.Surface,
+    onBackground = DashboardColors.TextSecondary,
     onSurface = DashboardColors.TextPrimary,
-    error = DashboardColors.AccentPink
+    error = DashboardColors.Error,
+    onError = Color.White
 )
 
 val AppTypography = Typography(
@@ -52,6 +56,7 @@ val AppTypography = Typography(
         color = Color.White
     )
 )
+
 
 @Composable
 fun AutoScriptAppTheme(
