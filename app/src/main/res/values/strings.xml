@@ -13,5 +13,7 @@
     <string name="taobao_service">淘宝无障碍服务</string>
     <string name="taobao_description">淘宝自动化脚本</string>
 
+    <string name="app_icon_description">App 图标</string>
+
 
 </resources>
