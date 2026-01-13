@@ -69,5 +69,10 @@ abstract class AppDatabase : RoomDatabase() {
                     .build().also { instance = it }
             }
         }
+
+        fun closeDatabase() {
+            instance?.close()
+            instance = null
+        }
     }
 }

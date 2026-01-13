@@ -16,14 +16,6 @@ object TaskModule {
 
     @Singleton
     @Provides
-    fun provideTaskDatabase(
-        @ApplicationContext context: Context
-    ): AppDatabase {
-        return AppDatabase.Companion.getInstance(context)
-    }
-
-    @Singleton
-    @Provides
     fun provideTaskRepository(appDatabase: AppDatabase): TaskRepository {
         return TaskRepository(appDatabase.taskDao())
     }
